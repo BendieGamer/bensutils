@@ -73,10 +73,18 @@ input[type=file]{display:none}
   <div class="gbody">
     <div class="trow"><label>Thread title</label><input id="ttl" value="MINISH, #1 DARKHEART!???"></div>
     <div id="pforms"></div>
-    <div style="display:flex;gap:6px;margin-top:4px">
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center">
       <button class="btn" onclick="addPost()">+ Add reply</button>
       <button class="btn btn-go" onclick="generate()">Generate thread</button>
+      <input id="save-name" type="text" placeholder="Save name" style="flex:1;min-width:180px;padding:4px 8px;border:1px solid #999;background:#fff;color:#000">
+      <button class="btn" onclick="saveCurrent()">Save</button>
+      <select id="save-list" style="padding:4px 8px;border:1px solid #999;background:#fff;color:#000;min-width:180px">
+        <option value="">Load saved thread</option>
+      </select>
+      <button class="btn" onclick="loadSelected()">Load</button>
+      <button class="btn" onclick="deleteSelected()">Delete</button>
     </div>
+    <div id="save-message" style="font-size:10px;color:#004400;margin-top:6px"></div>
   </div>
 </div>
 <div id="fout" style="display:none">
@@ -221,5 +229,117 @@ function generate(){
   document.getElementById('fout').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+const STORAGE_KEY = 'bensutils_forum_saves';
+
+function getSavedSaves(){
+  try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{}}catch(e){return{}}}
+
+function persistSaves(saves){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(saves));
+}
+
+function updateSaveList(){
+  const list=document.getElementById('save-list');
+  const saves=getSavedSaves();
+  const selected=list.value;
+  list.innerHTML='<option value="">Load saved thread</option>';
+  Object.keys(saves).sort().forEach(name=>{
+    const option=document.createElement('option');
+    option.value=name; option.textContent=name;
+    list.appendChild(option);
+  });
+  if(selected && saves[selected]) list.value=selected;
+}
+
+function showSaveMessage(text,color='#004400'){
+  const el=document.getElementById('save-message');
+  el.textContent=text;
+  el.style.color=color;
+}
+
+function readCurrentState(){
+  const title=document.getElementById('ttl').value||'';
+  const currentPosts=[];
+  posts.forEach(p=>{
+    const id=p.id;
+    currentPosts.push({
+      img:p.img||null,
+      un:document.getElementById('un-'+id)?.value||'',
+      badge:getBadge(id),
+      jd:document.getElementById('jd-'+id)?.value||'',
+      tp:document.getElementById('tp-'+id)?.value||'',
+      grp:document.getElementById('grp-'+id)?.value||'',
+      dt:document.getElementById('dt-'+id)?.value||'',
+      isMod:document.getElementById('mod-'+id)?.checked||false,
+      msg:document.getElementById('msg-'+id)?.value||''
+    });
+  });
+  return {title,currentPosts};
+}
+
+function saveCurrent(){
+  const name=document.getElementById('save-name').value.trim();
+  if(!name){showSaveMessage('Enter a save name before saving.', '#a00');return}
+  const saves=getSavedSaves();
+  saves[name]=readCurrentState();
+  persistSaves(saves);
+  updateSaveList();
+  showSaveMessage(`Saved thread “${name}”.`);
+}
+
+function loadSelected(){
+  const list=document.getElementById('save-list');
+  const name=list.value;
+  if(!name){showSaveMessage('Select a saved thread to load.', '#a00');return}
+  const saves=getSavedSaves();
+  const data=saves[name];
+  if(!data){showSaveMessage('Saved thread not found.', '#a00');return}
+  loadSave(data);
+  showSaveMessage(`Loaded thread “${name}”.`);
+}
+
+function deleteSelected(){
+  const list=document.getElementById('save-list');
+  const name=list.value;
+  if(!name){showSaveMessage('Select a saved thread to delete.', '#a00');return}
+  const saves=getSavedSaves();
+  if(!saves[name]){showSaveMessage('Saved thread not found.', '#a00');return}
+  delete saves[name];
+  persistSaves(saves);
+  updateSaveList();
+  showSaveMessage(`Deleted save “${name}”.`);
+}
+
+function loadSave(data){
+  posts=[]; pid=0;
+  const container=document.getElementById('pforms');
+  container.innerHTML='';
+  document.getElementById('ttl').value=data.title||'';
+  data.currentPosts.forEach(post=>{
+    addPost({
+      un:post.un,
+      badge:post.badge,
+      jd:post.jd,
+      tp:post.tp,
+      grp:post.grp,
+      dt:post.dt,
+      msg:post.msg
+    });
+    const id = posts[posts.length-1].id;
+    if(post.img){
+      posts.find(p=>p.id===id).img = post.img;
+      const d=document.getElementById('avd-'+id);
+      d.classList.add('has-img');
+      const im=document.createElement('img');
+      im.className='av-img';
+      im.src=post.img;
+      d.appendChild(im);
+      document.getElementById('avs-'+id).textContent='Uploaded!';
+    }
+    document.getElementById('mod-'+id).checked=post.isMod;
+  });
+}
+
+updateSaveList();
 addPost();addPost();addPost();
 </script>
