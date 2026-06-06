@@ -91,6 +91,8 @@ input[type=file]{display:none}
 const BC_BADGE  = {src:'BC.png'};
 const OBC_BADGE = {src:'OBC.png'};
 const TBC_BADGE = {src:'TBC.jpg'};
+// Moderator badge (use uploaded image file)
+const MOD_BADGE = {src:'moderator.png'};
 
 const POST_REPLY_SVG = `<svg class="post-reply-icon" viewBox="0 0 22 16" xmlns="http://www.w3.org/2000/svg">
   <rect x="0" y="0" width="22" height="16" rx="2" fill="#c0cce0" stroke="#8899aa" stroke-width="1"/>
@@ -115,6 +117,11 @@ function getBadgeHTML(badge){
   };
   const c=cfgs[badge];if(!c||!c.src)return'';
   return`<div class="badge-area"><img class="badge-hat" src="${c.src}" alt="${badge} badge"></div>`;
+}
+
+function getModHTML(isMod){
+  if(!isMod) return '';
+  return `<div class="badge-area"><img class="badge-hat" src="${MOD_BADGE.src}" alt="moderator"></div>`;
 }
 
 function addPost(def){
@@ -144,6 +151,7 @@ function addPost(def){
     <div class="fr"><label>Total posts</label><input id="tp-${id}" value="${d.tp}"></div>
     <div class="fr"><label>Group</label><input id="grp-${id}" value="${d.grp}"></div>
     <div class="fr"><label>Date/time</label><input id="dt-${id}" value="${d.dt}"></div>
+    <div class="fr"><label>Moderator</label><input type="checkbox" id="mod-${id}"></div>
     <div class="fr"><label>Message</label><textarea id="msg-${id}">${d.msg}</textarea></div>
   </div>
 </div>
@@ -188,12 +196,13 @@ function generate(){
     const msg=(document.getElementById('msg-'+id)?.value||'').replace(/\n/g,'<br>');
     const ptitle=i===0?title:'Re: '+title;
     const avHTML=p.img?`<img src="${p.img}">`:`<div class="s-avatar-empty">Upload<br>avatar<br>image</div>`;
+    const isMod = document.getElementById('mod-'+id)?.checked;
     const tr=document.createElement('tr');
     tr.className='frow-tr';
     tr.innerHTML=`<td class="fleft">
   <span class="online-dot"></span><span class="s-uname">${un}</span>
   <div class="s-avatar">${avHTML}</div>
-  ${getBadgeHTML(badge)}
+  ${getModHTML(isMod)}${getBadgeHTML(badge)}
   <div class="s-info">Joined: ${jd}<br>Total Posts: ${tp}${grp?`<br><span class="s-grp">+ ${grp}</span>`:''}</div>
 </td>
 <td class="fright">
