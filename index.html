@@ -73,7 +73,7 @@
           <article class="card">
             <h2>ROBLOX Forum Generator</h2>
             <p>Open the forum thread generator tool to recreate old forums</p>
-            <button class="btn" id="goto-forum-generator">Open Utility</button>
+            <a class="btn" id="goto-forum-generator" href="./forums.html">Open Utility</a>
           </article>
           <article class="card">
             <h2>roblox::utils</h2>
@@ -339,7 +339,6 @@
     atob('c3RhbiB3YXMgaGVyZQ==');
     const pages = document.querySelectorAll('.container > div');
     const backLinks = document.querySelectorAll('.back-link');
-    const gotoForumBtn = document.getElementById('goto-forum-generator');
     const gotoPlaceBtn = document.getElementById('goto-place-converter');
     const gotoObjToMeshBtn = document.getElementById('goto-obj-to-mesh-converter');
     const gotoMeshToObjBtn = document.getElementById('goto-mesh-to-obj-converter');
@@ -356,7 +355,37 @@
       }
     }
 
-    gotoForumBtn.addEventListener('click', () => showPage('page-forum-generator'));
+    function getForumRoute() {
+      const base = window.location.pathname.replace(/\/index\.html$/, '');
+      return base.endsWith('/') ? `${base}forums` : `${base}/forums`;
+    }
+
+    function routeFromLocation() {
+      const hash = window.location.hash.replace(/^#/, '');
+      if (hash) {
+        const targetPage = document.getElementById(hash);
+        if (targetPage) {
+          showPage(hash);
+          return;
+        }
+      }
+
+      const pathname = window.location.pathname.replace(/\/index\.html$/, '');
+      if (pathname.endsWith('/forums')) {
+        showPage('page-forum-generator');
+        return;
+      }
+
+      showPage('page-home');
+    }
+
+    function navigateTo(pageId, route) {
+      showPage(pageId);
+      if (route) {
+        history.pushState(null, '', route);
+      }
+    }
+
     gotoPlaceBtn.addEventListener('click', () => showPage('page-place-converter'));
     gotoObjToMeshBtn.addEventListener('click', () => showPage('page-obj-to-mesh-converter'));
     gotoMeshToObjBtn.addEventListener('click', () => showPage('page-mesh-to-obj-converter'));
@@ -364,7 +393,7 @@
 
     backLinks.forEach(link => link.addEventListener('click', (e) => {
       e.preventDefault();
-      showPage('page-home');
+      navigateTo('page-home', '/');
     }));
 
     function appendConsole(msg) {
@@ -1200,15 +1229,7 @@
     }
 
     function navigateFromHash() {
-      const hash = window.location.hash.replace(/^#/, '');
-      if (hash) {
-        const targetPage = document.getElementById(hash);
-        if (targetPage) {
-          showPage(hash);
-          return;
-        }
-      }
-      showPage('page-home');
+      routeFromLocation();
     }
 
     async function main() {
@@ -1226,13 +1247,8 @@
       }
     }
 
-    window.addEventListener('hashchange', () => {
-      const hash = window.location.hash.replace(/^#/, '');
-      if (hash) {
-        const targetPage = document.getElementById(hash);
-        if (targetPage) showPage(hash);
-      }
-    });
+    window.addEventListener('hashchange', routeFromLocation);
+    window.addEventListener('popstate', routeFromLocation);
 
     main();
   </script>
