@@ -1,329 +1,493 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ben's Utils</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>roblox::utils</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
-    :root {
-      color: #e2e8f0;
-      background: #030406;
-      font-family: Inter, Verdana, Geneva, sans-serif;
+    body {
+      font-family: "Courier New", Courier, monospace;
+      background-color: #121212;
+      color: #e0e0e0;
+      line-height: 1.6;
+      margin: 0;
+      padding: 2em;
     }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; }
-    body { background: #030406; color: #e2e8f0; }
-    a { color: inherit; text-decoration: none; }
-    .page { min-height: 100vh; display: grid; place-items: start center; padding: 24px; }
-    .container { width: min(980px, 100%); }
-    .panel { width: 100%; padding: 32px; background: rgba(15, 23, 42, 0.96); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 20px; }
-    .panel h1 { margin: 0 0 14px; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.04em; }
-    .panel p { margin: 0 0 28px; line-height: 1.8; color: #cbd5e1; }
-    .cards { display: grid; gap: 16px; }
-    .card { padding: 20px; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 16px; background: rgba(15, 23, 42, 0.8); }
-    .card h2 { margin: 0 0 10px; font-size: 1.15rem; color: #f8fafc; }
-    .card p { margin: 0 0 18px; color: #cbd5e1; }
-    .btn { display: inline-block; padding: 12px 18px; border-radius: 999px; background: #0f172a; border: 1px solid #475569; color: #f8fafc; font-weight: 700; transition: background 0.18s ease, transform 0.18s ease; }
-    .btn:hover { background: #1e293b; transform: translateY(-1px); }
-    .btn-go { background:#4a6ea8;color:#fff;border-color:#2a4e88; }
-    .btn-go:hover { background:#3a5e98; }
-    .note { margin-top: 24px; font-size: 0.95rem; color: #94a3b8; }
-    .back-link { display: inline-block; margin-bottom: 1em; color: #aaccff; text-decoration: none; }
-    .back-link:hover { text-decoration: underline; }
-    .drop-zone { border: 2px dashed #444; padding: 3em; text-align: center; cursor: pointer; margin-bottom: 1em; transition: border-color 0.2s, background-color 0.2s; }
-    .drop-zone.dragover { border-color: #888; background-color: #1a1a1a; }
-    button, .btn { font-family: inherit; font-size: 1em; padding: 0.5em 1em; background-color: #2a2a2a; color: #e0e0e0; border: 1px solid #555; cursor: pointer; margin-right: 0.5em; margin-top: 0.5em; }
-    button:hover, .btn:hover { background-color: #333; border-color: #777; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; background-color: #2a2a2a; border-color: #555; }
-    .status-text.ready { color: #81c784; }
-    .status-text.error { color: #e57373; }
-    .console-window { background-color: #0d0d0d; border: 1px solid #444; border-radius: 4px; overflow: hidden; }
-    .console-header { background-color: #2a2a2a; padding: 4px 8px; font-size: 0.8em; color: #aaa; border-bottom: 1px solid #444; text-transform: lowercase; }
-    .console { width: 100%; box-sizing: border-box; height: 220px; font-family: "Courier New", monospace; font-size: 0.9em; color: #ccc; padding: 0.5em; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
-    .log-entry { margin-bottom: 2px; }
-    input[type="checkbox"], select { vertical-align: middle; margin-right: 0.5em; }
-    input[type="text"] { font-family: inherit; background-color: #1a1a1a; color: #e0e0e0; border: 1px solid #444; padding: 0.4em; font-size: 0.9em; }
-    select { font-family: inherit; background-color: #2a2a2a; color: #e0e0e0; border: 1px solid #555; padding: 0.3em; }
-    .setting-item { margin-bottom: 0.5em; }
-    .footer { margin-top: 2em; font-size: 0.9em; color: #777; text-align: center; }
-    .mapping-item { display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.5em; }
-    .mapping-item input[type="text"] { flex: 1; }
-    .mapping-item span { color: #888; }
-    .remove-mapping-btn { padding: 0.2em 0.6em; font-size: 1.2em; line-height: 1; background-color: #3a2a2a; border-color: #755; }
-    .remove-mapping-btn:hover { background-color: #5a2a2a; border-color: #a55; color: #fdd; }
-    .mapping-controls { display: flex; align-items: center; gap: 0.5em; margin-top: 1em; }
-    .mapping-controls button { margin-top: 0; }
-    a { color: #aaccff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    a:visited { color: #e0b3ff; }
-    .experimental-tag { color: #e57373; }
-    .maintenance-tag { color: #5b3f9c; }
-    .terrain-thingy { display: flex; flex-direction: column; gap: 0.3em; margin-top: 0.5em; margin-bottom: 1em; }
-    .terrain-thingy select { width: 100%; box-sizing: border-box; }
-    @media (max-width: 640px) { .panel { padding: 24px; } }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    h1,
+    h2 {
+      font-weight: normal;
+      border-bottom: 1px solid #444;
+      padding-bottom: 0.3em;
+      margin-top: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #444;
+      margin: 2em 0;
+    }
+
+    .drop-zone {
+      border: 2px dashed #444;
+      padding: 3em;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 1em;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .drop-zone.dragover {
+      border-color: #888;
+      background-color: #1a1a1a;
+    }
+
+    button,
+    .btn {
+      font-family: inherit;
+      font-size: 1em;
+      padding: 0.5em 1em;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      border: 1px solid #555;
+      cursor: pointer;
+      margin-right: 0.5em;
+      margin-top: 0.5em;
+    }
+
+    button:hover,
+    .btn:hover {
+      background-color: #333;
+      border-color: #777;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background-color: #2a2a2a;
+      border-color: #555;
+    }
+
+    .status-text.ready {
+      color: #81c784;
+    }
+
+    .status-text.error {
+      color: #e57373;
+    }
+
+    .console-window {
+      background-color: #0d0d0d;
+      border: 1px solid #444;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .console-header {
+      background-color: #2a2a2a;
+      padding: 4px 8px;
+      font-size: 0.8em;
+      color: #aaa;
+      border-bottom: 1px solid #444;
+      text-transform: lowercase;
+    }
+
+    .console {
+      width: 100%;
+      box-sizing: border-box;
+      height: 220px;
+      font-family: "Courier New", monospace;
+      font-size: 0.9em;
+      color: #ccc;
+      padding: 0.5em;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .log-entry {
+      margin-bottom: 2px;
+    }
+
+    input[type="checkbox"],
+    select {
+      vertical-align: middle;
+      margin-right: 0.5em;
+    }
+
+    input[type="text"] {
+      font-family: inherit;
+      background-color: #1a1a1a;
+      color: #e0e0e0;
+      border: 1px solid #444;
+      padding: 0.4em;
+      font-size: 0.9em;
+    }
+
+    select {
+      font-family: inherit;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      border: 1px solid #555;
+      padding: 0.3em;
+    }
+
+    .setting-item {
+      margin-bottom: 0.5em;
+    }
+
+    .footer {
+      margin-top: 2em;
+      font-size: 0.9em;
+      color: #777;
+      text-align: center;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1em;
+      color: #aaccff;
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .mapping-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    .mapping-item input[type="text"] {
+      flex: 1;
+    }
+
+    .mapping-item span {
+      color: #888;
+    }
+
+    .remove-mapping-btn {
+      padding: 0.2em 0.6em;
+      font-size: 1.2em;
+      line-height: 1;
+      background-color: #3a2a2a;
+      border-color: #755;
+    }
+
+    .remove-mapping-btn:hover {
+      background-color: #5a2a2a;
+      border-color: #a55;
+      color: #fdd;
+    }
+
+    .mapping-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin-top: 1em;
+    }
+
+    .mapping-controls button {
+      margin-top: 0;
+    }
+
+    a {
+      color: #aaccff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a:visited {
+      color: #e0b3ff;
+    }
+
+    .experimental-tag {
+      color: #e57373;
+    }
+    
+    .maintenance-tag {
+      color: #5b3f9c;
+    }
+
+    .terrain-thingy {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3em;
+      margin-top: 0.5em;
+      margin-bottom: 1em;
+    }
+
+    .terrain-thingy select {
+      width: 100%;
+      box-sizing: border-box;
+    }
   </style>
 </head>
+
 <body>
-  <main class="page">
-    <div class="container">
-      <div id="page-home" class="panel">
-        <h1>Ben's Utils</h1>
-        <p>Simple utility launcher for your public use.</p>
-        <div class="cards">
-          <article class="card">
-            <h2>ROBLOX Forum Generator</h2>
-            <p>Open the forum thread generator tool to recreate old forums</p>
-            <button class="btn" id="goto-forum-generator">Open Utility</button>
-          </article>
-          <article class="card">
-            <h2>roblox::utils</h2>
-            <p>Open individual utilities directly from the homepage.</p>
-            <div style="display:grid;gap:10px;">
-              <button class="btn" id="goto-place-converter">legacy_place::convert</button>
-              <button class="btn" id="goto-obj-to-mesh-converter">obj::to_roblox_mesh</button>
-              <button class="btn" id="goto-mesh-to-obj-converter">roblox_mesh::to_obj</button>
-              <button class="btn" id="goto-mesh-version-converter">roblox_mesh::to_roblox_mesh</button>
-            </div>
-          </article>
-        </div>
+
+  <div class="container">
+
+    <div id="page-home">
+      <a href="../index.html" class="back-link">&larr; back to homepage</a>
+      <h1>roblox::utils</h1>
+      <p>choose a utility to use.</p>
+      <button id="goto-place-converter">legacy_place::convert</button>
+      <button id="goto-obj-to-mesh-converter">obj::to_roblox_mesh</button>
+      <button id="goto-mesh-to-obj-converter">roblox_mesh::to_obj</button>
+      <button id="goto-mesh-version-converter">roblox_mesh::to_roblox_mesh</button>
+
+      <hr>
+
+      <h2>credits</h2>
+      <ul>
+        <li>
+          <strong>legacy_place::convert</strong> uses <a href="https://github.com/rojo-rbx/rbx-dom" target="_blank"
+            rel="noopener noreferrer">rbx_binary and rbx_xml</a>
+          (from rbx-dom) for roblox place file conversion and <a href="https://github.com/krakow10/rbx_mesh" target="_blank"
+            rel="noopener noreferrer">rbx-mesh</a> for converting unions to an older format.
+        </li>
+        <li>
+          <strong>obj::to_roblox_mesh / roblox_mesh::to_obj</strong> is based on
+          <a href="https://devforum.roblox.com/t/roblox-filemesh-format-specification/326114/" target="_blank"
+            rel="noopener noreferrer">maximumadhd's roblox mesh file format documentation</a>.
+        </li>
+      </ul>
+    </div>
+
+    <div id="page-place-converter" style="display: none;">
+      <a href="#" class="back-link">&larr; back to home</a>
+      <h1>legacy_place::convert</h1>
+      <p>a utility to make modern roblox places work on legacy roblox clients</p>
+
+      <div id="drop-place" class="drop-zone" tabindex="0">
+        <p id="drop-hint-place">drag & drop .rbxl or .rbxlx files here, or click to choose.</p>
+        <p id="filename-place"></p>
       </div>
 
-      <div id="page-place-converter" class="panel" style="display: none;">
-        <a href="#" class="back-link">&larr; back to home</a>
-        <h1>legacy_place::convert</h1>
-        <p>a utility to make modern roblox places work on legacy roblox clients</p>
+      <input id="fileinput-place" type="file" accept=".rbxl,.rbxlx" multiple style="display:none" />
+      <button id="choosebtn-place">choose files</button>
+      <button id="convertbtn-place" disabled>convert & download</button>
+      <p id="status-place">status: <span id="status-text-place" class="status-text">idle</span></p>
 
-        <div id="drop-place" class="drop-zone" tabindex="0">
-          <p id="drop-hint-place">drag & drop .rbxl or .rbxlx files here, or click to choose.</p>
-          <p id="filename-place"></p>
-        </div>
+      <hr>
 
-        <input id="fileinput-place" type="file" accept=".rbxl,.rbxlx" multiple style="display:none" />
-        <button id="choosebtn-place">choose files</button>
-        <button id="convertbtn-place" disabled>convert & download</button>
-        <p id="status-place">status: <span id="status-text-place" class="status-text">idle</span></p>
-
-        <hr>
-
-        <h2>settings</h2>
-        <div class="setting-item">
-          <label>
-            <input type="checkbox" id="toggle-folders">
-            convert folder instances into models
-          </label>
-        </div>
-        <div class="setting-item">
-          <label>
-            <input type="checkbox" id="toggle-meshparts">
-            convert meshparts into part + specialmesh
-          </label>
-        </div>
-        <div class="setting-item">
-          <label>
-            <input type="checkbox" id="toggle-xml">
-            force export to xml (.rbxlx)
-          </label>
-        </div>
-        <div class="setting-item">
-          <label>
-            <input type="checkbox" id="toggle-binary">
-            force export to binary (.rbxl)
-          </label>
-        </div>
-        <div class="setting-item">
-          <label>
-            <input type="checkbox" id="toggle-assetid-to-url">
-            convert rbxassetid:// to url
-          </label>
-        </div>
-        <div class="setting-item" id="asset-url-format-container" style="display: none; margin-left: 2em;">
-          <label for="asset-url-format-input">url: </label>
-          <input type="text" id="asset-url-format-input" value="http://www.roblox.com/asset/?id=" size="40">
-        </div>
-        <div class="setting-item">
-          <label>
-            <input type="checkbox" id="toggle-smooth-terrain">
-            convert smooth terrain to voxel terrain <span class="experimental-tag">[experimental]</span>
-          </label>
-        </div>
-        <div class="setting-item terrain-thingy" id="terrain-version-container" style="display: none; margin-left: 2em; border-left: 2px solid #333; padding-left: 1em;">
-          <label for="terrain-version-select">grid version: </label>
-          <select id="terrain-version-select">
-            <option value="V1">clustergrid (version 1, recommended for 2011L and clients that don't support v2)</option>
-            <option value="V2">clustergrid (version 2, recommended for 2012E - 2013E)</option>
-            <option value="V3" selected>clustergrid (version 3, recommended for 2013M+)</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <label>
-            <input type="checkbox" id="toggle-downgrade-voxel">
-            modify existing voxel terrain's version <span class="experimental-tag">[experimental]</span>
-          </label>
-        </div>
-        <div class="setting-item terrain-thingy" id="voxel-version-container" style="display: none; margin-left: 2em; border-left: 2px solid #333; padding-left: 1em;">
-          <label for="voxel-version-select">target grid version: </label>
-          <select id="voxel-version-select">
-            <option value="V1">clustergrid (version 1, recommended for 2011L and clients that don't support v2)</option>
-            <option value="V2" selected>clustergrid (version 2, recommended for 2012E - 2013E)</option>
-            <option value="V3">clustergrid (version 3, recommended for 2013M+)</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <label>
-            <input type="checkbox" id="toggle-fix-unions">
-            convert unions to old format <span class="experimental-tag">[experimental]</span>
-          </label>
-        </div>
-
-        <hr>
-
-        <h2>instance mapping</h2>
-        <p>replace specific instance classnames with others. (e.g., "Folder" → "Model")</p>
-        <div id="instance-mappings-list"></div>
-        <div class="mapping-controls">
-          <button id="add-mapping-btn">+ add mapping</button>
-          <button id="import-config-btn">import config</button>
-          <button id="export-config-btn">export config</button>
-          <input type="file" id="import-config-input" accept=".json" style="display:none;" />
-        </div>
-
-        <hr>
-
-        <h2>console</h2>
-        <div class="console-window">
-          <div class="console-header"><span>output</span></div>
-          <div id="console-place" class="console" tabindex="0"></div>
-        </div>
+      <h2>settings</h2>
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="toggle-folders">
+          convert folder instances into models
+        </label>
+      </div>
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="toggle-meshparts">
+          convert meshparts into part + specialmesh
+        </label>
+      </div>
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="toggle-xml">
+          force export to xml (.rbxlx)
+        </label>
+      </div>
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="toggle-binary">
+          force export to binary (.rbxl)
+        </label>
+      </div>
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="toggle-assetid-to-url">
+          convert rbxassetid:// to url
+        </label>
+      </div>
+      <div class="setting-item" id="asset-url-format-container" style="display: none; margin-left: 2em;">
+        <label for="asset-url-format-input">url: </label>
+        <input type="text" id="asset-url-format-input" value="http://www.roblox.com/asset/?id=" size="40">
+      </div>
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="toggle-smooth-terrain">
+          convert smooth terrain to voxel terrain <span class="experimental-tag">[experimental]</span>
+        </label>
+      </div>
+      <div class="setting-item terrain-thingy" id="terrain-version-container"
+        style="display: none; margin-left: 2em; border-left: 2px solid #333; padding-left: 1em;">
+        <label for="terrain-version-select">grid version: </label>
+        <select id="terrain-version-select">
+          <option value="V1">clustergrid (version 1, recommended for 2011L and clients that don't support v2)</option>
+          <option value="V2">clustergrid (version 2, recommended for 2012E - 2013E)</option>
+          <option value="V3" selected>clustergrid (version 3, recommended for 2013M+)</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="toggle-downgrade-voxel">
+          modify existing voxel terrain's version <span class="experimental-tag">[experimental]</span>
+        </label>
+      </div>
+      <div class="setting-item terrain-thingy" id="voxel-version-container"
+        style="display: none; margin-left: 2em; border-left: 2px solid #333; padding-left: 1em;">
+        <label for="voxel-version-select">target grid version: </label>
+        <select id="voxel-version-select">
+          <option value="V1">clustergrid (version 1, recommended for 2011L and clients that don't support v2)</option>
+          <option value="V2" selected>clustergrid (version 2, recommended for 2012E - 2013E)</option>
+          <option value="V3">clustergrid (version 3, recommended for 2013M+)</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="toggle-fix-unions">
+          convert unions to old format <span class="experimental-tag">[experimental]</span>
+        </label>
       </div>
 
-      <div id="page-obj-to-mesh-converter" class="panel" style="display: none;">
-        <a href="#" class="back-link">&larr; back to home</a>
-        <h1>obj::to_roblox_mesh</h1>
-        <p>a utility to convert .obj files to roblox's mesh format</p>
+      <hr>
 
-        <div id="drop-obj-to-mesh" class="drop-zone" tabindex="0">
-          <p id="drop-hint-obj-to-mesh">drag & drop .obj files here, or click to choose.</p>
-          <p id="filename-obj-to-mesh"></p>
-        </div>
-
-        <input id="fileinput-obj-to-mesh" type="file" accept=".obj" multiple style="display:none" />
-        <button id="choosebtn-obj-to-mesh">choose files</button>
-        <button id="convertbtn-obj-to-mesh" disabled>convert & download</button>
-        <p id="status-obj-to-mesh">status: <span id="status-text-obj-to-mesh" class="status-text">idle</span></p>
-
-        <hr>
-
-        <h2>settings</h2>
-        <div class="setting-item">
-          <label for="mesh-version-select">target mesh version:</label>
-          <select id="mesh-version-select">
-            <option value="v1.00">version 1.00</option>
-            <option value="v1.01">version 1.01</option>
-            <option value="v2.00" selected>version 2.00</option>
-            <option value="v3.00">version 3.00</option>
-            <option value="v4.00">version 4.00</option>
-            <option value="v5.00">version 5.00</option>
-            <option value="v6.00">version 6.00</option>
-            <option value="v7.00">version 7.00</option>
-          </select>
-        </div>
-
-        <hr>
-
-        <h2>console</h2>
-        <div class="console-window">
-          <div class="console-header"><span>output</span></div>
-          <div id="console-obj-to-mesh" class="console" tabindex="0"></div>
-        </div>
+      <h2>instance mapping</h2>
+      <p>replace specific instance classnames with others. (e.g., "Folder" &rarr; "Model")</p>
+      <div id="instance-mappings-list">
+      </div>
+      <div class="mapping-controls">
+        <button id="add-mapping-btn">+ add mapping</button>
+        <button id="import-config-btn">import config</button>
+        <button id="export-config-btn">export config</button>
+        <input type="file" id="import-config-input" accept=".json" style="display:none;" />
       </div>
 
-      <div id="page-mesh-to-obj-converter" class="panel" style="display: none;">
-        <a href="#" class="back-link">&larr; back to home</a>
-        <h1>roblox_mesh::to_obj</h1>
-        <p>a utility to convert roblox's mesh format back to .obj</p>
+      <hr>
 
-        <div id="drop-mesh-to-obj" class="drop-zone" tabindex="0">
-          <p id="drop-hint-mesh-to-obj">drag & drop .mesh files here, or click to choose.</p>
-          <p id="filename-mesh-to-obj"></p>
-        </div>
-
-        <input id="fileinput-mesh-to-obj" type="file" accept=".mesh,application/octet-stream" multiple style="display:none" />
-        <button id="choosebtn-mesh-to-obj">choose files</button>
-        <button id="convertbtn-mesh-to-obj" disabled>convert & download</button>
-        <p id="status-mesh-to-obj">status: <span id="status-text-mesh-to-obj" class="status-text">idle</span></p>
-
-        <hr>
-
-        <h2>console</h2>
-        <div class="console-window">
-          <div class="console-header"><span>output</span></div>
-          <div id="console-mesh-to-obj" class="console" tabindex="0"></div>
-        </div>
-      </div>
-
-      <div id="page-mesh-version-converter" class="panel" style="display: none;">
-        <a href="#" class="back-link">&larr; back to home</a>
-        <h1>roblox_mesh::to_roblox_mesh</h1>
-        <p>a utility to upgrade or downgrade your mesh to any version</p>
-
-        <div id="drop-mesh-version" class="drop-zone" tabindex="0">
-          <p id="drop-hint-mesh-version">drag & drop .mesh files here, or click to choose.</p>
-          <p id="filename-mesh-version"></p>
-        </div>
-
-        <input id="fileinput-mesh-version" type="file" accept=".mesh,application/octet-stream" multiple style="display:none" />
-        <button id="choosebtn-mesh-version">choose files</button>
-        <button id="convertbtn-mesh-version" disabled>convert & download</button>
-        <p id="status-mesh-version">status: <span id="status-text-mesh-version" class="status-text">idle</span></p>
-
-        <hr>
-
-        <h2>settings</h2>
-        <div class="setting-item">
-          <label for="mesh-version-select-target">target mesh version:</label>
-          <select id="mesh-version-select-target">
-            <option value="v1.00">version 1.00</option>
-            <option value="v1.01">version 1.01</option>
-            <option value="v2.00" selected>version 2.00</option>
-            <option value="v3.00">version 3.00</option>
-            <option value="v4.00">version 4.00</option>
-            <option value="v5.00">version 5.00</option>
-            <option value="v6.00">version 6.00</option>
-            <option value="v7.00">version 7.00</option>
-          </select>
-        </div>
-
-        <hr>
-
-        <h2>console</h2>
-        <div class="console-window">
-          <div class="console-header"><span>output</span></div>
-          <div id="console-mesh-version" class="console" tabindex="0"></div>
-        </div>
-      </div>
-
-      <div id="page-forum-generator" class="panel" style="display: none;">
-        <a href="#" class="back-link">&larr; back to home</a>
-        <div class="gbox">
-          <div class="ghead">ROBLOX Forum Generator — 2012</div>
-          <div class="gbody">
-            <div class="trow"><label>Thread title</label><input id="ttl" value="MINISH, #1 DARKHEART!???"></div>
-            <div id="pforms"></div>
-            <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;align-items:center">
-              <button class="btn" onclick="forumGenerator.addPost()">+ Add reply</button>
-              <button class="btn btn-go" onclick="forumGenerator.generate()">Generate thread</button>
-            </div>
-          </div>
-        </div>
-        <div id="fout" style="display:none">
-          <div class="forum">
-            <div class="fbar" id="fbar"></div>
-            <table class="ftable"><tbody id="ftbody"></tbody></table>
-          </div>
-        </div>
+      <h2>console</h2>
+      <div class="console-window">
+        <div class="console-header"><span>output</span></div>
+        <div id="console-place" class="console" tabindex="0"></div>
       </div>
     </div>
-  </main>
+
+    <div id="page-obj-to-mesh-converter" style="display: none;">
+      <a href="#" class="back-link">&larr; back to home</a>
+      <h1>obj::to_roblox_mesh</h1>
+      <p>a utility to convert .obj files to roblox's mesh format</p>
+
+      <div id="drop-obj-to-mesh" class="drop-zone" tabindex="0">
+        <p id="drop-hint-obj-to-mesh">drag & drop .obj files here, or click to choose.</p>
+        <p id="filename-obj-to-mesh"></p>
+      </div>
+
+      <input id="fileinput-obj-to-mesh" type="file" accept=".obj" multiple style="display:none" />
+      <button id="choosebtn-obj-to-mesh">choose files</button>
+      <button id="convertbtn-obj-to-mesh" disabled>convert & download</button>
+      <p id="status-obj-to-mesh">status: <span id="status-text-obj-to-mesh" class="status-text">idle</span></p>
+
+      <hr>
+
+      <h2>settings</h2>
+      <div class="setting-item">
+        <label for="mesh-version-select">target mesh version:</label>
+        <select id="mesh-version-select">
+          <option value="v1.00">version 1.00</option>
+          <option value="v1.01">version 1.01</option>
+          <option value="v2.00" selected>version 2.00</option>
+          <option value="v3.00">version 3.00</option>
+          <option value="v4.00">version 4.00</option>
+          <option value="v5.00">version 5.00</option>
+          <option value="v6.00">version 6.00</option>
+          <option value="v7.00">version 7.00</option>
+        </select>
+      </div>
+
+      <hr>
+
+      <h2>console</h2>
+      <div class="console-window">
+        <div class="console-header"><span>output</span></div>
+        <div id="console-obj-to-mesh" class="console" tabindex="0"></div>
+      </div>
+    </div>
+
+    <div id="page-mesh-to-obj-converter" style="display: none;">
+      <a href="#" class="back-link">&larr; back to home</a>
+      <h1>roblox_mesh::to_obj</h1>
+      <p>a utility to convert roblox's mesh format back to .obj</p>
+
+      <div id="drop-mesh-to-obj" class="drop-zone" tabindex="0">
+        <p id="drop-hint-mesh-to-obj">drag & drop .mesh files here, or click to choose.</p>
+        <p id="filename-mesh-to-obj"></p>
+      </div>
+
+      <input id="fileinput-mesh-to-obj" type="file" accept=".mesh,application/octet-stream" multiple
+        style="display:none" />
+      <button id="choosebtn-mesh-to-obj">choose files</button>
+      <button id="convertbtn-mesh-to-obj" disabled>convert & download</button>
+      <p id="status-mesh-to-obj">status: <span id="status-text-mesh-to-obj" class="status-text">idle</span></p>
+
+      <hr>
+
+      <h2>console</h2>
+      <div class="console-window">
+        <div class="console-header"><span>output</span></div>
+        <div id="console-mesh-to-obj" class="console" tabindex="0"></div>
+      </div>
+    </div>
+
+    <div id="page-mesh-version-converter" style="display: none;">
+      <a href="#" class="back-link">&larr; back to home</a>
+      <h1>roblox_mesh::to_roblox_mesh</h1>
+      <p>a utility to upgrade or downgrade your mesh to any version</p>
+
+      <div id="drop-mesh-version" class="drop-zone" tabindex="0">
+        <p id="drop-hint-mesh-version">drag & drop .mesh files here, or click to choose.</p>
+        <p id="filename-mesh-version"></p>
+      </div>
+
+      <input id="fileinput-mesh-version" type="file" accept=".mesh,application/octet-stream" multiple
+        style="display:none" />
+      <button id="choosebtn-mesh-version">choose files</button>
+      <button id="convertbtn-mesh-version" disabled>convert & download</button>
+      <p id="status-mesh-version">status: <span id="status-text-mesh-version" class="status-text">idle</span></p>
+
+      <hr>
+
+      <h2>settings</h2>
+      <div class="setting-item">
+        <label for="mesh-version-select-target">target mesh version:</label>
+        <select id="mesh-version-select-target">
+          <option value="v1.00">version 1.00</option>
+          <option value="v1.01">version 1.01</option>
+          <option value="v2.00" selected>version 2.00</option>
+          <option value="v3.00">version 3.00</option>
+          <option value="v4.00">version 4.00</option>
+          <option value="v5.00">version 5.00</option>
+          <option value="v6.00">version 6.00</option>
+          <option value="v7.00">version 7.00</option>
+        </select>
+      </div>
+
+      <hr>
+
+      <h2>console</h2>
+      <div class="console-window">
+        <div class="console-header"><span>output</span></div>
+        <div id="console-mesh-version" class="console" tabindex="0"></div>
+      </div>
+    </div>
+  </div>
 
   <script type="module">
     import initWasm, {
@@ -334,12 +498,11 @@
       convert_filemesh_version,
       RobloxMeshVersion,
       TerrainFormat
-    } from './robloxPlaceConverter.js';
+    } from './robloxPlaceConverter.js'; // this was originally gonna be just a place converter, but then I added mesh converters too
 
     atob('c3RhbiB3YXMgaGVyZQ==');
     const pages = document.querySelectorAll('.container > div');
     const backLinks = document.querySelectorAll('.back-link');
-    const gotoForumBtn = document.getElementById('goto-forum-generator');
     const gotoPlaceBtn = document.getElementById('goto-place-converter');
     const gotoObjToMeshBtn = document.getElementById('goto-obj-to-mesh-converter');
     const gotoMeshToObjBtn = document.getElementById('goto-mesh-to-obj-converter');
@@ -356,7 +519,6 @@
       }
     }
 
-    gotoForumBtn.addEventListener('click', () => showPage('page-forum-generator'));
     gotoPlaceBtn.addEventListener('click', () => showPage('page-place-converter'));
     gotoObjToMeshBtn.addEventListener('click', () => showPage('page-obj-to-mesh-converter'));
     gotoMeshToObjBtn.addEventListener('click', () => showPage('page-mesh-to-obj-converter'));
@@ -378,9 +540,9 @@
     }
 
     const origConsole = { log: console.log.bind(console), warn: console.warn.bind(console), error: console.error.bind(console) };
-    console.log = function (...a) { origConsole.log(...a); a.forEach(x => appendConsole(x)); };
-    console.warn = function (...a) { origConsole.warn(...a); a.forEach(x => appendConsole(x)); };
-    console.error = function (...a) { origConsole.error(...a); a.forEach(x => appendConsole(x)); };
+    console.log = function (...a) { origConsole.log(...a); a.forEach(x => appendConsole(x)) };
+    console.warn = function (...a) { origConsole.warn(...a); a.forEach(x => appendConsole(x)) };
+    console.error = function (...a) { origConsole.error(...a); a.forEach(x => appendConsole(x)) };
 
     const placeConverter = {
       dropHint: document.getElementById('drop-hint-place'),
@@ -599,7 +761,7 @@
             const toggleDowngradeVoxel = this.toggleDowngradeVoxel.checked;
             const terrainVersion = this.terrainVersionSelect.value;
             const voxelVersion = this.voxelVersionSelect.value;
-            const isBinaryInput = is_binary_rbxl(bytes);
+            const isBinaryInput = is_binary_rbxl(bytes); // this could be done in js since function just checks first few bytes
             const fixUnions = this.toggleFixUnions.checked;
             const willExportBinary = (isBinaryInput && !forceXml) || forceBinary;
 
@@ -922,145 +1084,6 @@
       }
     };
 
-    const forumGenerator = {
-      posts: [],
-      pid: 0,
-      DEFS: [
-        {un:'coolboy10000',badge:'OBC',jd:'07 Jul 2008',tp:'7776',grp:'Christians of R...',msg:'Please offer. U wanted #1 or #100 (if ur really Telamon)',dt:'04-01-2012 03:13 PM'},
-        {un:'walt999',badge:'BC',jd:'16 Aug 2007',tp:'4861',grp:'LMaD SNIPERS',msg:"coolboy's chance finally xD",dt:'04-01-2012 03:13 PM'},
-        {un:'BlueBed',badge:'BC',jd:'06 Jun 2011',tp:'563',grp:'',msg:"I'll buy for 562,836?",dt:'04-01-2012 03:13 PM'},
-      ],
-      BADGES: ['None','BC','TBC','OBC','NBC'],
-
-      getBadgeHTML(badge) {
-        if(!badge||badge==='None')return'';
-        const cfgs={
-          BC: {src:'BC.png'},
-          TBC:{src:'TBC.jpg'},
-          OBC:{src:'OBC.png'},
-          NBC:{src:null},
-        };
-        const c=cfgs[badge];if(!c||!c.src)return'';
-        return `<div class="badge-area"><img class="badge-hat" src="${c.src}" alt="${badge} badge"></div>`;
-      },
-
-      getModHTML(isMod) {
-        if(!isMod) return '';
-        return `<div class="badge-area"><img class="badge-hat" src="moderator.png" alt="moderator"></div>`;
-      },
-
-      addPost(def) {
-        if(this.pid>=6){alert('Max 6 posts');return}
-        const id=this.pid++;
-        const d=def||this.DEFS[id]||{un:'user'+id,badge:'None',jd:'01 Jan 2010',tp:'100',grp:'',msg:'',dt:'04-01-2012 03:13 PM'};
-        this.posts.push({id,img:null});
-        const div=document.createElement('div');
-        div.className='pf';div.id='pf-'+id;
-        div.innerHTML=`<div class="pf-hd">${id===0?'Original Post':'Reply '+id}</div>
-<div class="pf-layout">
-  <div class="av-col">
-    <div class="av-drop" id="avd-${id}" onclick="document.getElementById('fi-${id}').click()">
-      <div class="av-drop-txt">Click to upload<br>your ROBLOX<br>avatar image</div>
-    </div>
-    <input type="file" id="fi-${id}" accept="image/*" onchange="forumGenerator.loadImg(${id},this)">
-    <div id="avs-${id}" style="font-size:9px;color:#668;text-align:center;margin-top:2px"></div>
-  </div>
-  <div class="flds">
-    <div class="fr"><label>Username</label><input id="un-${id}" value="${d.un}"></div>
-    <div class="fr"><label>Badge</label>
-      <div class="bdg-row" id="br-${id}">
-        ${this.BADGES.map(b=>`<button class="bopt${b===d.badge?' on':''}" onclick="forumGenerator.selBadge(${id},'${b}')">${b}</button>`).join('')}
-      </div>
-    </div>
-    <div class="fr"><label>Join date</label><input id="jd-${id}" value="${d.jd}"></div>
-    <div class="fr"><label>Total posts</label><input id="tp-${id}" value="${d.tp}"></div>
-    <div class="fr"><label>Group</label><input id="grp-${id}" value="${d.grp}"></div>
-    <div class="fr"><label>Date/time</label><input id="dt-${id}" value="${d.dt}"></div>
-    <div class="fr"><label>Moderator</label><input type="checkbox" id="mod-${id}"></div>
-    <div class="fr"><label>Message</label><textarea id="msg-${id}">${d.msg}</textarea></div>
-  </div>
-</div>
-<div style="text-align:right;margin-top:5px"><button class="btn btn-sm" onclick="forumGenerator.rmPost(${id})">Remove</button></div>`;
-        document.getElementById('pforms').appendChild(div);
-      },
-
-      loadImg(id, inp) {
-        const f=inp.files[0]; if(!f) return;
-        const r=new FileReader();
-        r.onload=e=>{
-          const p=this.posts.find(p=>p.id===id);
-          if(p) p.img=e.target.result;
-          const d=document.getElementById('avd-'+id);
-          d.classList.add('has-img');
-          let im=d.querySelector('img.av-img');
-          if(!im){im=document.createElement('img');im.className='av-img';d.appendChild(im)}
-          im.src=e.target.result;
-          document.getElementById('avs-'+id).textContent='Uploaded!';
-        };
-        r.readAsDataURL(f);
-      },
-
-      selBadge(id, v) {
-        document.querySelectorAll('#br-'+id+' .bopt').forEach(b=>b.classList.toggle('on', b.textContent===v));
-      },
-
-      getBadge(id) {
-        const el=document.querySelector('#br-'+id+' .bopt.on');
-        return el?el.textContent:'None';
-      },
-
-      rmPost(id) {
-        document.getElementById('pf-'+id)?.remove();
-        const i=this.posts.findIndex(p=>p.id===id);
-        if(i>-1) this.posts.splice(i,1);
-      },
-
-      generate() {
-        const title=document.getElementById('ttl').value||'Thread';
-        document.getElementById('fbar').textContent=title;
-        const tb=document.getElementById('ftbody');
-        tb.innerHTML='';
-        this.posts.forEach((p,i)=>{
-          const id=p.id;
-          const un=document.getElementById('un-'+id)?.value||'';
-          const badge=this.getBadge(id);
-          const jd=document.getElementById('jd-'+id)?.value||'';
-          const tp=document.getElementById('tp-'+id)?.value||'';
-          const grp=document.getElementById('grp-'+id)?.value||'';
-          const dt=document.getElementById('dt-'+id)?.value||'';
-          const msg=(document.getElementById('msg-'+id)?.value||'').replace(/\n/g,'<br>');
-          const ptitle=i===0?title:'Re: '+title;
-          const avHTML=p.img?`<img src="${p.img}">`:`<div class="s-avatar-empty">Upload<br>avatar<br>image</div>`;
-          const isMod = document.getElementById('mod-'+id)?.checked;
-          const tr=document.createElement('tr');
-          tr.className='frow-tr';
-          tr.innerHTML=`<td class="fleft">
-  <span class="online-dot"></span><span class="s-uname">${un}</span>
-  <div class="s-avatar">${avHTML}</div>
-  ${this.getModHTML(isMod)}${this.getBadgeHTML(badge)}
-  <div class="s-info">Joined: ${jd}<br>Total Posts: ${tp}${grp?`<br><span class="s-grp">+ ${grp}</span>`:''}</div>
-</td>
-<td class="fright">
-  <span class="ph-title">${ptitle}</span>
-  <span class="ph-date">Posted: ${dt}</span>
-  <div class="ph-div"></div>
-  <div class="ph-msg">${msg}</div>
-  <div class="ph-footer">
-    <span class="post-reply-btn"><span class="post-reply-word-post">post</span><span class="post-reply-word-reply">reply</span></span>
-    <span class="rpt">Report Abuse</span>
-  </div>
-</td>`;
-          tb.appendChild(tr);
-        });
-        document.getElementById('fout').style.display='block';
-        document.getElementById('fout').scrollIntoView({behavior:'smooth',block:'nearest'});
-      },
-
-      init() {
-        this.addPost(); this.addPost(); this.addPost();
-      }
-    };
-
     const meshVersionConverter = {
       dropHint: document.getElementById('drop-hint-mesh-version'),
       filenameEl: document.getElementById('filename-mesh-version'),
@@ -1218,7 +1241,6 @@
         objToMeshConverter.init();
         meshToObjConverter.init();
         meshVersionConverter.init();
-        forumGenerator.init();
         navigateFromHash();
       } catch (err) {
         console.error("failed to initialize wasm module:", err);
@@ -1237,4 +1259,5 @@
     main();
   </script>
 </body>
+
 </html>
