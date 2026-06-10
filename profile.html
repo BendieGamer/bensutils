@@ -108,6 +108,59 @@ input[type=file]{display:none}
   display:block;padding:0 6px;border-right:1px solid rgba(255,255,255,0.3);font-size:11px;color:#fff;text-decoration:none;line-height:24px}
 #prof-out #SubNavigation ul li a:hover{text-decoration:underline;background:rgba(255,255,255,0.12)}
 
+/* ════ 2012 THEME OVERRIDES ════ */
+#prof-out.theme-2012 #Banner{
+  background:#fff none;height:60px}
+#prof-out.theme-2012 #Banner #Logo{
+  display:block;position:absolute;left:10px;top:0;height:60px;width:170px;
+  background:var(--head_sign) no-repeat left center;background-size:147px 81px}
+#prof-out.theme-2012 #Banner #Options,
+#prof-out.theme-2012 #Banner #Alerts{
+  position:absolute;bottom:auto;top:0;height:34px;
+  background:linear-gradient(#3a6ea5,#28507e);
+  display:flex;align-items:center}
+#prof-out.theme-2012 #Banner #Options{left:auto;right:0;width:auto;padding:0 10px}
+#prof-out.theme-2012 #Banner #Authentication{
+  position:static;background:none;padding:0;color:#fff;font-size:11px}
+#prof-out.theme-2012 #Banner #Authentication .logout-btn{
+  background:#1d3f63;color:#fff;border:1px solid #142c47;border-radius:2px}
+#prof-out.theme-2012 #Banner #Alerts{
+  left:0;right:auto;width:auto;border:none;background:linear-gradient(#3a6ea5,#28507e);
+  padding:0 10px}
+#prof-out.theme-2012 .AlertSpace{display:flex;align-items:center;height:34px;gap:14px}
+#prof-out.theme-2012 div.MessageAlert,
+#prof-out.theme-2012 div.FriendsAlert,
+#prof-out.theme-2012 div.RobuxAlert,
+#prof-out.theme-2012 div.TicketsAlert{
+  float:none;width:auto;height:auto;border:none;background:none}
+#prof-out.theme-2012 .AlertSpace a{
+  position:static;width:auto;padding-left:20px;background-repeat:no-repeat;
+  background-position:left center;background-size:16px 16px;
+  color:#fff;font-size:12px;font-weight:bold;line-height:16px}
+#prof-out.theme-2012 .AlertSpace .MessageAlert a{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 2h14v9H8l-4 3v-3H1z' fill='%23ffd24a'/%3E%3C/svg%3E")}
+#prof-out.theme-2012 .AlertSpace .FriendsAlert a{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23bcd2ee' stroke-width='2'/%3E%3Cpath d='M8 4v4l3 2' stroke='%23bcd2ee' stroke-width='2' fill='none'/%3E%3C/svg%3E")}
+#prof-out.theme-2012 .AlertSpace .RobuxAlert a{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%2300b34d'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-size='8' font-weight='bold' fill='%23fff' font-family='Arial'%3ER%24%3C/text%3E%3C/svg%3E")}
+#prof-out.theme-2012 .AlertSpace .TicketsAlert a{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1l7 7-7 7-7-7z' fill='%2349c2ff'/%3E%3C/svg%3E")}
+
+#prof-out.theme-2012 #Navigation{
+  background:linear-gradient(#5a92cf,#3a6ea5);height:32px;line-height:32px}
+#prof-out.theme-2012 #Navigation ul{height:32px}
+#prof-out.theme-2012 #Navigation ul li a,
+#prof-out.theme-2012 #Navigation ul li a:visited{
+  line-height:32px;border-left:none;font-size:12px}
+
+#prof-out.theme-2012 #SubNavigation{
+  background:#e2e2e2;background-image:none;color:#444}
+#prof-out.theme-2012 #SubNavigation ul li a,
+#prof-out.theme-2012 #SubNavigation ul li a:visited{
+  color:#369;border-right:1px solid #ccc}
+#prof-out.theme-2012 #SubNavigation ul li a:hover{
+  background:rgba(0,0,0,0.05);text-decoration:underline}
+
 /* Status bar */
 #prof-out #StatusBar{
   background:#e8ecf4;border-bottom:1px solid #c0c8d8;
@@ -345,6 +398,7 @@ input[type=file]{display:none}
       <label style="min-width:auto">Sales</label><input type="number" id="p-sales" value="0">
     </div>
     <div class="erow"><label>My profile?</label><input type="checkbox" id="p-myprofile" checked></div>
+    <div class="erow"><label>2012 Mode</label><input type="checkbox" id="p-theme2012"></div>
     <div class="erow"><label>Online status</label>
       <div class="brow" id="status-row">
         <button class="bopt on" onclick="selStatus('offline')">Offline</button>
@@ -396,6 +450,10 @@ input[type=file]{display:none}
     <div class="esect">Other Places (accordion list)</div>
     <div id="places-editor"></div>
     <button class="ebtn" onclick="addPlace()" style="margin-bottom:5px">+ Add Place</button>
+
+    <div class="esect">Player Badges (user-created)</div>
+    <div id="player-badges-editor"></div>
+    <button class="ebtn" onclick="addPlayerBadge()" style="margin-bottom:5px">+ Add Player Badge</button>
 
     <div class="esect">Friends</div>
     <div id="friends-editor"></div>
@@ -628,8 +686,8 @@ const BADGE_COLORS = {
 };
 
 let mainImg=null, placeImg=null;
-let friends=[], groups=[], places=[];
-let fid=0, gid=0, plid=0;
+let friends=[], groups=[], places=[], playerBadges=[];
+let fid=0, gid=0, plid=0, pbid=0;
 
 /* ── image helpers ── */
 function setDropImg(id, src) {
@@ -661,6 +719,12 @@ function loadGroupImg(id,inp) {
   const f=inp.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=e=>{ const gr=groups.find(x=>x.id===id); if(gr) gr.img=e.target.result; setDropImg('gr-av-'+id,e.target.result); };
+  r.readAsDataURL(f);
+}
+function loadPlayerBadgeImg(id,inp) {
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{ const pb=playerBadges.find(x=>x.id===id); if(pb) pb.img=e.target.result; setDropImg('pb-av-'+id,e.target.result); };
   r.readAsDataURL(f);
 }
 
@@ -708,6 +772,31 @@ function addFriend(def) {
 }
 function rmFriend(id){ document.getElementById('fr-'+id)?.remove(); const i=friends.findIndex(f=>f.id===id); if(i>-1)friends.splice(i,1); }
 
+function addPlayerBadge(def) {
+  const id=pbid++; playerBadges.push({id, img:def&&def.img||null});
+  const wrap=document.createElement('div');
+  wrap.id='pb-'+id; wrap.className='friend-row-e';
+  wrap.innerHTML=`
+    <div class="av-drop" id="pb-av-${id}" style="width:48px;height:48px;flex-shrink:0" onclick="document.getElementById('pb-fi-${id}').click()">
+      <div class="av-drop-txt" style="font-size:8px">badge</div>
+    </div>
+    <input type="file" id="pb-fi-${id}" accept="image/*" onchange="loadPlayerBadgeImg(${id},this)">
+    <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+      <div style="display:flex;gap:4px;align-items:center">
+        <label style="font-size:10px;min-width:50px">Name</label>
+        <input type="text" id="pb-name-${id}" value="${def?def.name:'My Badge'}" style="font-family:Verdana;font-size:10px;border:1px solid #aaa;padding:1px 3px;flex:1">
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <label style="font-size:10px;min-width:50px">Place</label>
+        <input type="text" id="pb-place-${id}" value="${def?def.place:'My Place'}" style="font-family:Verdana;font-size:10px;border:1px solid #aaa;padding:1px 3px;flex:1">
+      </div>
+    </div>
+    <button class="ebtn" style="font-size:10px;padding:1px 6px" onclick="rmPlayerBadge(${id})">×</button>`;
+  document.getElementById('player-badges-editor').appendChild(wrap);
+  if(def&&def.img) setDropImg('pb-av-'+id,def.img);
+}
+function rmPlayerBadge(id){ document.getElementById('pb-'+id)?.remove(); const i=playerBadges.findIndex(p=>p.id===id); if(i>-1)playerBadges.splice(i,1); }
+
 /* ── groups ── */
 function addGroup(def) {
   const id=gid++; groups.push({id, img:def&&def.img||null});
@@ -741,6 +830,8 @@ function generate() {
   const mem       = getMem();
   const isMod     = document.getElementById('p-mod').checked;
   const myProfile = document.getElementById('p-myprofile').checked;
+  const theme2012 = document.getElementById('p-theme2012').checked;
+  document.getElementById('prof-out').classList.toggle('theme-2012', theme2012);
   const online    = getStatus()==='online';
   const placeName = document.getElementById('pl-name').value||'Place';
   const placeVis  = document.getElementById('pl-visits').value||'';
@@ -822,6 +913,27 @@ function generate() {
       });
       badgeTbody.appendChild(row);
     }
+  }
+
+  /* Player (user-created) badges */
+  const playerBadgesEl = document.getElementById('out-player-badges');
+  if (playerBadges.length===0) {
+    playerBadgesEl.outerHTML = `<p class="NoResults" id="out-player-badges">${username} hasn't earned any user-created badges.</p>`;
+  } else {
+    const items = playerBadges.map(pb=>{
+      const name  = document.getElementById('pb-name-'+pb.id)?.value || 'Badge';
+      const place = document.getElementById('pb-place-'+pb.id)?.value || '';
+      const img = pb.img
+        ? `<img src="${pb.img}" alt="${name}" style="height:75px;border-width:0px">`
+        : `<div style="width:75px;height:75px;background:#ccc;display:flex;align-items:center;justify-content:center;font-size:7px;text-align:center;padding:3px;line-height:1.2">${name}</div>`;
+      return `<div class="Badge">
+        <div class="BadgeImage"><a href="#" onclick="return false">${img}</a></div>
+        <div class="BadgeLabel"><a href="#" onclick="return false">${name}</a></div>
+        ${place?`<div class="BadgeLabel" style="color:#555">${place}</div>`:''}
+      </div>`;
+    }).join('');
+    document.getElementById('out-player-badges').outerHTML =
+      `<div id="out-player-badges">${items}</div>`;
   }
 
   /* statistics */
@@ -982,6 +1094,7 @@ function readState(){
     isOwner:document.getElementById('pl-owner').checked,
     places:places.map(pl=>({name:document.getElementById('pl-n-'+pl.id)?.value||''})),
     friends:friends.map(fr=>({img:fr.img, un:document.getElementById('fr-un-'+fr.id)?.value||'', online:document.getElementById('fr-on-'+fr.id)?.checked||false})),
+    playerBadges:playerBadges.map(pb=>({img:pb.img, name:document.getElementById('pb-name-'+pb.id)?.value||'', place:document.getElementById('pb-place-'+pb.id)?.value||''})),
     groups:groups.map(gr=>({img:gr.img, name:document.getElementById('gr-name-'+gr.id)?.value||''})),
   };
 }
@@ -1045,6 +1158,8 @@ function applyState(d){
   (d.places||[]).forEach(p=>addPlace(p));
   document.getElementById('friends-editor').innerHTML=''; friends=[]; fid=0;
   (d.friends||[]).forEach(f=>addFriend(f));
+  document.getElementById('player-badges-editor').innerHTML=''; playerBadges=[]; pbid=0;
+  (d.playerBadges||[]).forEach(p=>addPlayerBadge(p));
   document.getElementById('groups-editor').innerHTML=''; groups=[]; gid=0;
   (d.groups||[]).forEach(g=>addGroup(g));
 }
