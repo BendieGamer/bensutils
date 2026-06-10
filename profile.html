@@ -35,7 +35,7 @@ input[type=file]{display:none}
 /* ── PAGE WRAPPER — real 2011 sky blue background ── */
 #prof-out{display:none;font-family:Verdana,Geneva,Sans-Serif;font-size:8pt;color:#000;
   background:var(--c11_bkg) no-repeat center top / cover;
-  min-height:900px;width:916px;margin:8px auto}
+  min-height:900px;width:100%;margin:8px auto}
 
 /* ── HEADER CONTAINER ── */
 #prof-out #HeaderContainer{width:900px;margin:0 auto;overflow:hidden}
@@ -78,10 +78,10 @@ input[type=file]{display:none}
 #prof-out .AlertSpace a{position:absolute;width:86px;padding-left:22px;
   background:var(--head_infobox_icons) no-repeat 2px center;text-decoration:none;font-size:11px;
   white-space:nowrap;overflow:hidden;font-weight:bold;line-height:16px}
-#prof-out .AlertSpace .MessageAlert a{left:4px;top:8px;color:#444;background-position:-2px 0}
-#prof-out .AlertSpace .FriendsAlert a{left:104px;top:8px;color:#05b;background-position:-2px -81px}
+#prof-out .AlertSpace .MessageAlert a{left:4px;top:8px;color:#444;background-position:-2px -81px}
+#prof-out .AlertSpace .FriendsAlert a{left:104px;top:8px;color:#05b;background-position:-2px -121px}
 #prof-out .AlertSpace .RobuxAlert a{left:4px;top:36px;color:#080;background-position:-2px -41px}
-#prof-out .AlertSpace .TicketsAlert a{left:104px;top:36px;color:#a61;background-position:-2px -121px}
+#prof-out .AlertSpace .TicketsAlert a{left:104px;top:36px;color:#a61;background-position:-2px 0}
 
 /* Navigation — real topNav_blue image from archive */
 #prof-out #Navigation{
@@ -195,7 +195,12 @@ input[type=file]{display:none}
   display:flex;align-items:center;gap:4px;
   font-size:9px;padding:2px 4px;font-weight:bold;
   font-family:Verdana,sans-serif}
-#prof-out .ps-icon{width:16px;height:16px;display:inline-block;flex-shrink:0}
+#prof-out .ps-icon{width:16px;height:16px;display:inline-block;flex-shrink:0;
+  background:var(--head_infobox_icons) no-repeat 0 0;background-size:16px 128px}
+#prof-out .ps-icon.ps-hats{background-position:0 -64px}
+#prof-out .ps-icon.ps-tickets{background-position:0 -96px}
+#prof-out .ps-icon.ps-robux{background-position:0 -32px}
+#prof-out .ps-icon.ps-sales{background-position:0 0}
 
 /* ROBLOX Badges */
 #prof-out .Badge{text-align:center;margin:2px;display:inline-block;vertical-align:top}
@@ -514,19 +519,19 @@ input[type=file]{display:none}
           <!-- Stats 2x2 grid (ProfileAlertPanel) -->
           <div class="ProfileAlertPanel" id="out-stats-panel">
             <div class="ps-cell">
-              <svg class="ps-icon" viewBox="0 0 16 16"><rect x="1" y="9" width="14" height="3" rx="1" fill="#888"/><ellipse cx="8" cy="9" rx="7" ry="2" fill="#aaa"/><path d="M5,9 Q6,4 8,3 Q10,4 11,9Z" fill="#666"/></svg>
+              <span class="ps-icon ps-hats"></span>
               <span id="out-hats">1</span>
             </div>
             <div class="ps-cell">
-              <svg class="ps-icon" viewBox="0 0 16 16"><rect x="1" y="4" width="14" height="8" rx="1" fill="#5588cc"/><text x="8" y="11" text-anchor="middle" font-size="7" fill="#fff" font-family="Verdana">T</text></svg>
+              <span class="ps-icon ps-tickets"></span>
               <span id="out-tickets-stat">0</span>
             </div>
             <div class="ps-cell">
-              <svg class="ps-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#dd6600"/><text x="8" y="12" text-anchor="middle" font-size="8" fill="#fff" font-family="Arial" font-weight="bold">R$</text></svg>
+              <span class="ps-icon ps-robux"></span>
               <span id="out-robux-stat">6</span>
             </div>
             <div class="ps-cell">
-              <svg class="ps-icon" viewBox="0 0 16 16"><polygon points="8,1 14,6 8,15 2,6" fill="#4499dd"/></svg>
+              <span class="ps-icon ps-sales"></span>
               <span id="out-sales">0</span>
             </div>
           </div>
