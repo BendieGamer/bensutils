@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avatar Preview Generator - Ben's Utils</title>
+<style>
+  :root { color: #e2e8f0; background: #030406; font-family: Inter, Verdana, Geneva, sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: #030406; color: #e2e8f0; }
+  a { color: #aaccff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .page { min-height: 100vh; display: grid; place-items: start center; padding: 24px; }
+  .container { width: min(980px, 100%); }
+  .panel { width: 100%; padding: 32px; background: rgba(15, 23, 42, 0.96); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 20px; }
+  .panel h1 { margin: 0 0 14px; font-size: clamp(1.6rem, 5vw, 2.4rem); letter-spacing: -0.04em; }
+  .panel p.lead { margin: 0 0 24px; line-height: 1.6; color: #cbd5e1; }
+  .back-link { display: inline-block; margin-bottom: 1em; }
+  .layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+
+  /* Preview box, styled after the OnlyRetroRobloxHere render preview */
+  .preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .preview-box {
+    width: 260px; height: 260px; border-radius: 6px;
+    background: radial-gradient(circle at 50% 35%, #3a4a5e 0%, #1c2733 55%, #101822 100%);
+    border: 1px solid #4a5a70;
+    position: relative; overflow: hidden;
+    cursor: pointer;
+  }
+  .preview-box canvas { display: block; width: 100%; height: 100%; }
+  .preview-status { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 0.7rem; color: #94a3b8; pointer-events: none; }
+  .redraw-txt { color: #aaccff; font-size: 0.95rem; cursor: pointer; user-select: none; }
+  .redraw-txt:hover { text-decoration: underline; }
+
+  /* Shirt/Pants upload drop zones, styled after forums.html .av-drop */
+  .upload-row { display: flex; gap: 10px; }
+  .av-drop { flex: 1; height: 64px; border: 2px dashed #475569; border-radius: 8px; background: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .av-drop:hover { border-color: #94a3b8; }
+  .av-drop-txt { font-size: 0.7rem; color: #94a3b8; text-align: center; line-height: 1.4; padding: 4px; }
+  .av-drop img.av-thumb { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #1e293b; }
+  .av-drop.has-img .av-drop-txt { display: none; }
+  .upload-row input[type=file] { display: none; }
+  .upload-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-sm { font-size: 0.75rem; padding: 5px 10px; }
+
+  .equipped { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 260px; }
+  .equipped .eq-slot { width: 52px; height: 52px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+  .equipped .eq-slot img { width: 100%; height: 100%; object-fit: contain; }
+  .equipped .eq-slot .eq-label { position: absolute; bottom: 0; left: 0; right: 0; font-size: 0.55rem; text-align: center; background: rgba(0,0,0,0.55); color: #94a3b8; line-height: 1.4; }
+  .equipped .eq-slot.empty { color: #475569; font-size: 0.6rem; }
+
+  /* Controls */
+  .controls { display: flex; flex-direction: column; gap: 16px; }
+  .ctrl-group { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 12px; padding: 14px 16px; }
+  .ctrl-group h3 { margin: 0 0 10px; font-size: 0.95rem; color: #f8fafc; }
+  .colors-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .color-fld { display: flex; flex-direction: column; gap: 3px; font-size: 0.75rem; color: #94a3b8; }
+  .color-fld input[type=color] { width: 100%; height: 28px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; padding: 2px; cursor: pointer; }
+
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tab-btn { font-family: inherit; font-size: 0.8rem; padding: 5px 10px; border-radius: 999px; background: #0f172a; border: 1px solid #475569; color: #f8fafc; cursor: pointer; }
+  .tab-btn.on { background: #4a6ea8; border-color: #2a4e88; }
+  .tab-btn:hover { background: #1e293b; }
+  .item-search { width: 100%; font-family: inherit; font-size: 0.85rem; background: #0f172a; color: #e0e0e0; border: 1px solid #475569; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; }
+  .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; max-height: 260px; overflow-y: auto; padding-right: 2px; }
+  .item-cell { background: #0f172a; border: 1px solid #475569; border-radius: 6px; cursor: pointer; padding: 2px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .item-cell.on { border-color: #4a6ea8; box-shadow: 0 0 0 2px #4a6ea8 inset; }
+  .item-cell:hover { border-color: #94a3b8; }
+  .item-cell img { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
+  .item-cell.none { display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #94a3b8; text-align: center; }
+  .item-name { font-size: 0.7rem; color: #94a3b8; margin-top: 8px; min-height: 1em; }
+  .actions { display: flex; gap: 10px; margin-top: 4px; }
+  .btn { display: inline-block; padding: 10px 16px; border-radius: 999px; background: #0f172a; border: 1px solid #475569; color: #f8fafc; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; }
+  .btn:hover { background: #1e293b; }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="container">
+      <div class="panel">
+        <a class="back-link" href="./index.html">&larr; Back to Ben's Utils</a>
+        <h1>Avatar Preview Generator</h1>
+        <p class="lead">Pick body colors, hats, and faces from the classic 2011-era ROBLOX catalog, and upload your own shirt/pants textures. Click the preview to randomize your look.</p>
+
+        <div class="layout">
+          <div class="preview-wrap">
+            <div class="preview-box" id="preview" title="Click here to re-draw!">
+              <canvas id="three-canvas"></canvas>
+              <div class="preview-status" id="previewStatus"></div>
+            </div>
+            <div class="redraw-txt" id="redraw">Click here to re-draw!</div>
+            <div class="equipped" id="equipped"></div>
+            <div class="actions">
+              <button class="btn" id="randomizeBtn">Randomize</button>
+              <button class="btn" id="resetBtn">Reset</button>
+            </div>
+          </div>
+
+          <div class="controls">
+            <div class="ctrl-group">
+              <h3>Body Colors</h3>
+              <div class="colors-grid">
+                <label class="color-fld">Head <input type="color" id="c-head"></label>
+                <label class="color-fld">Torso <input type="color" id="c-torso"></label>
+                <label class="color-fld">Left Arm <input type="color" id="c-armL"></label>
+                <label class="color-fld">Right Arm <input type="color" id="c-armR"></label>
+                <label class="color-fld">Left Leg <input type="color" id="c-legL"></label>
+                <label class="color-fld">Right Leg <input type="color" id="c-legR"></label>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <h3>Shirt &amp; Pants Textures</h3>
+              <div class="upload-row">
+                <div class="av-drop" id="shirtDrop">
+                  <div class="av-drop-txt">Click to upload<br>shirt texture<br>(585x559 template)</div>
+                </div>
+                <div class="av-drop" id="pantsDrop">
+                  <div class="av-drop-txt">Click to upload<br>pants texture<br>(585x559 template)</div>
+                </div>
+              </div>
+              <input type="file" id="shirtFile" accept="image/*">
+              <input type="file" id="pantsFile" accept="image/*">
+              <div class="upload-actions">
+                <button class="btn btn-sm" id="shirtClear">Clear shirt</button>
+                <button class="btn btn-sm" id="pantsClear">Clear pants</button>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <h3>Items</h3>
+              <div class="tabs" id="tabs"></div>
+              <input class="item-search" id="itemSearch" type="text" placeholder="Search items...">
+              <div class="item-grid" id="itemGrid"></div>
+              <div class="item-name" id="itemName"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const TYPES = ['Hat', 'Face', 'Gear'];
+const SLOT_FOR_TYPE = { Hat: 'hat', Face: 'face', Gear: 'gear' };
+
+const COLOR_PALETTE = ['#FFD800','#A1A5A2','#CC9966','#7C9C8E','#1A1A1A','#A3A2A5','#C70000','#0033CC','#7DC353','#FFFFFF','#F58020','#9B5DAB','#5B6770','#955F4D'];
+
+const state = {
+  catalog: [],
+  byType: {},
+  bodyColors: { head:'#FFD800', torso:'#A1A5A2', armL:'#FFD800', armR:'#FFD800', legL:'#1A1A1A', legR:'#1A1A1A' },
+  selected: { hat:null, face:null, gear:null },
+  currentTab: 'Hat'
+};
+
+const els = {
+  preview: document.getElementById('preview'),
+  previewStatus: document.getElementById('previewStatus'),
+  redraw: document.getElementById('redraw'),
+  tabs: document.getElementById('tabs'),
+  itemSearch: document.getElementById('itemSearch'),
+  itemGrid: document.getElementById('itemGrid'),
+  itemName: document.getElementById('itemName'),
+  equipped: document.getElementById('equipped'),
+};
+
+const PART_IDS = { head:'head', torso:'torso', armL:'armL', armR:'armR', legL:'legL', legR:'legR' };
+
+function applyBodyColors() {
+  for (const key in PART_IDS) {
+    const inp = document.getElementById('c-' + key);
+    if (inp) inp.value = state.bodyColors[key];
+  }
+  updateBodyMaterials();
+}
+
+function findItem(id) {
+  return state.catalog.find(it => it.id === id);
+}
+
+function renderEquipped() {
+  els.equipped.innerHTML = '';
+  TYPES.forEach(type => {
+    const slot = SLOT_FOR_TYPE[type];
+    const id = state.selected[slot];
+    const cell = document.createElement('div');
+    cell.className = 'eq-slot' + (id ? '' : ' empty');
+    if (id) {
+      const item = findItem(id);
+      const img = document.createElement('img');
+      img.src = 'avatar-data/thumbs/' + id + '.jpg';
+      img.alt = item ? item.name : type;
+      cell.appendChild(img);
+      const label = document.createElement('div');
+      label.className = 'eq-label';
+      label.textContent = type;
+      cell.appendChild(label);
+      cell.title = (item ? item.name : type);
+    } else {
+      cell.textContent = type;
+    }
+    els.equipped.appendChild(cell);
+  });
+}
+
+function applyAll() {
+  applyBodyColors();
+  renderEquipped();
+  applyHat();
+  applyFace();
+}
+
+function randomColor() { return COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]; }
+
+function randomize() {
+  state.bodyColors.head = randomColor();
+  state.bodyColors.torso = randomColor();
+  const armColor = randomColor();
+  state.bodyColors.armL = armColor;
+  state.bodyColors.armR = armColor;
+  const legColor = randomColor();
+  state.bodyColors.legL = legColor;
+  state.bodyColors.legR = legColor;
+
+  TYPES.forEach(type => {
+    const slot = SLOT_FOR_TYPE[type];
+    const items = state.byType[type] || [];
+    if (items.length === 0) { state.selected[slot] = null; return; }
+    // ~35% chance of "None" for hat/face/gear
+    if (Math.random() < 0.35) { state.selected[slot] = null; return; }
+    state.selected[slot] = items[Math.floor(Math.random() * items.length)].id;
+  });
+
+  applyAll();
+  renderItemGrid();
+}
+
+function resetAll() {
+  state.bodyColors = { head:'#FFD800', torso:'#A1A5A2', armL:'#FFD800', armR:'#FFD800', legL:'#1A1A1A', legR:'#1A1A1A' };
+  state.selected = { hat:null, face:null, gear:null };
+  applyAll();
+  renderItemGrid();
+}
+
+function renderTabs() {
+  els.tabs.innerHTML = '';
+  TYPES.forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (type === state.currentTab ? ' on' : '');
+    btn.textContent = type;
+    btn.onclick = () => { state.currentTab = type; els.itemSearch.value = ''; renderTabs(); renderItemGrid(); };
+    els.tabs.appendChild(btn);
+  });
+}
+
+function renderItemGrid() {
+  const type = state.currentTab;
+  const slot = SLOT_FOR_TYPE[type];
+  const query = els.itemSearch.value.trim().toLowerCase();
+  let items = state.byType[type] || [];
+  if (query) items = items.filter(it => it.name.toLowerCase().includes(query));
+
+  els.itemGrid.innerHTML = '';
+
+  // "None" cell
+  const noneCell = document.createElement('div');
+  noneCell.className = 'item-cell none' + (state.selected[slot] === null ? ' on' : '');
+  noneCell.textContent = 'None';
+  noneCell.onclick = () => {
+    state.selected[slot] = null;
+    renderEquipped(); renderItemGrid(); els.itemName.textContent = '';
+    if (slot === 'hat') applyHat();
+    if (slot === 'face') applyFace();
+  };
+  els.itemGrid.appendChild(noneCell);
+
+  const limited = items.slice(0, 300);
+  limited.forEach(it => {
+    const cell = document.createElement('div');
+    cell.className = 'item-cell' + (state.selected[slot] === it.id ? ' on' : '');
+    const img = document.createElement('img');
+    img.src = 'avatar-data/thumbs/' + it.id + '.jpg';
+    img.loading = 'lazy';
+    img.alt = it.name;
+    cell.appendChild(img);
+    cell.title = it.name;
+    cell.onclick = () => {
+      state.selected[slot] = it.id;
+      renderEquipped();
+      renderItemGrid();
+      els.itemName.textContent = it.name;
+      if (slot === 'hat') applyHat();
+      if (slot === 'face') applyFace();
+    };
+    els.itemGrid.appendChild(cell);
+  });
+}
+
+els.itemSearch.addEventListener('input', renderItemGrid);
+els.preview.addEventListener('click', randomize);
+els.redraw.addEventListener('click', randomize);
+document.getElementById('randomizeBtn').addEventListener('click', randomize);
+document.getElementById('resetBtn').addEventListener('click', resetAll);
+
+for (const key in PART_IDS) {
+  document.getElementById('c-' + key).addEventListener('input', e => {
+    state.bodyColors[key] = e.target.value;
+    applyBodyColors();
+  });
+}
+
+/* ---------------- Three.js R6 body scene ---------------- */
+
+const TEMPLATE_W = 585, TEMPLATE_H = 559;
+
+// Generate a blank shirt/pants UV template canvas with labeled regions.
+function makeTemplateCanvas(regions) {
+  const c = document.createElement('canvas');
+  c.width = TEMPLATE_W; c.height = TEMPLATE_H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#c9c9c9';
+  ctx.fillRect(0, 0, TEMPLATE_W, TEMPLATE_H);
+  ctx.font = '20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  regions.forEach(r => {
+    ctx.fillStyle = r.color;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = '#888';
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.fillStyle = '#555';
+    ctx.fillText(r.label, r.x + r.w / 2, r.y + r.h / 2);
+  });
+  return c;
+}
+
+// Approximate classic Roblox shirt template layout (585x559).
+const SHIRT_REGIONS = [
+  { label: 'Back Torso', x: 128, y: 32, w: 128, h: 128, color: '#bcbcbc' },
+  { label: 'Front Torso', x: 128, y: 224, w: 128, h: 128, color: '#cfcfcf' },
+  { label: 'L Arm', x: 0, y: 224, w: 64, h: 128, color: '#d6d6d6' },
+  { label: 'R Arm', x: 320, y: 224, w: 64, h: 128, color: '#d6d6d6' },
+];
+const PANTS_REGIONS = [
+  { label: 'L Leg', x: 0, y: 224, w: 64, h: 128, color: '#d6d6d6' },
+  { label: 'R Leg', x: 320, y: 224, w: 64, h: 128, color: '#d6d6d6' },
+];
+
+const shirtCanvas = makeTemplateCanvas(SHIRT_REGIONS);
+const pantsCanvas = makeTemplateCanvas(PANTS_REGIONS);
+const shirtTexture = new THREE.CanvasTexture(shirtCanvas);
+const pantsTexture = new THREE.CanvasTexture(pantsCanvas);
+shirtTexture.colorSpace = THREE.SRGBColorSpace;
+pantsTexture.colorSpace = THREE.SRGBColorSpace;
+
+// Build a per-face material array for a box, where one face samples a region of a template texture.
+function regionMaterial(baseColor, texture, region) {
+  const tex = texture.clone();
+  tex.needsUpdate = true;
+  tex.repeat.set(region.w / TEMPLATE_W, region.h / TEMPLATE_H);
+  tex.offset.set(region.x / TEMPLATE_W, 1 - (region.y + region.h) / TEMPLATE_H);
+  return new THREE.MeshStandardMaterial({ color: baseColor, map: tex });
+}
+function plainMaterial(baseColor) {
+  return new THREE.MeshStandardMaterial({ color: baseColor });
+}
+
+// Box face order: +X, -X, +Y, -Y, +Z(front), -Z(back)
+function buildPartMaterials(part, color) {
+  const c = new THREE.Color(color);
+  switch (part) {
+    case 'torso':
+      return [
+        plainMaterial(c), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+        regionMaterial(c, shirtTexture, SHIRT_REGIONS[1]), // front
+        regionMaterial(c, shirtTexture, SHIRT_REGIONS[0]), // back
+      ];
+    case 'armL':
+      return [
+        regionMaterial(c, shirtTexture, SHIRT_REGIONS[2]), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+      ];
+    case 'armR':
+      return [
+        plainMaterial(c), regionMaterial(c, shirtTexture, SHIRT_REGIONS[3]),
+        plainMaterial(c), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+      ];
+    case 'legL':
+      return [
+        regionMaterial(c, pantsTexture, PANTS_REGIONS[0]), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+      ];
+    case 'legR':
+      return [
+        plainMaterial(c), regionMaterial(c, pantsTexture, PANTS_REGIONS[1]),
+        plainMaterial(c), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+      ];
+    case 'head':
+      return [
+        plainMaterial(c), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+        plainMaterial(c), plainMaterial(c),
+      ];
+  }
+}
+
+// Scene setup
+const canvas = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+camera.position.set(2.6, 2.0, 4.2);
+camera.lookAt(0, 1.0, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+keyLight.position.set(3, 5, 4);
+scene.add(keyLight);
+const fillLight = new THREE.DirectionalLight(0x88aaff, 0.3);
+fillLight.position.set(-3, 2, -2);
+scene.add(fillLight);
+
+const STUD = 0.5; // scene units per "stud"
+const bodyGroup = new THREE.Group();
+scene.add(bodyGroup);
+
+const PART_GEOMETRY = {
+  head: new THREE.BoxGeometry(2 * STUD, 1 * STUD, 1 * STUD),
+  torso: new THREE.BoxGeometry(2 * STUD, 2 * STUD, 1 * STUD),
+  armL: new THREE.BoxGeometry(1 * STUD, 2 * STUD, 1 * STUD),
+  armR: new THREE.BoxGeometry(1 * STUD, 2 * STUD, 1 * STUD),
+  legL: new THREE.BoxGeometry(1 * STUD, 2 * STUD, 1 * STUD),
+  legR: new THREE.BoxGeometry(1 * STUD, 2 * STUD, 1 * STUD),
+};
+
+// Vertical layout (Y up), torso center at y=0 within bodyGroup.
+const PART_POSITIONS = {
+  torso: [0, 0, 0],
+  head: [0, 1.5 * STUD, 0],
+  armL: [-1.5 * STUD, 0, 0],
+  armR: [1.5 * STUD, 0, 0],
+  legL: [-0.5 * STUD, -2 * STUD, 0],
+  legR: [0.5 * STUD, -2 * STUD, 0],
+};
+
+const partMeshes = {};
+for (const part in PART_GEOMETRY) {
+  const mats = buildPartMaterials(part, state.bodyColors[part]);
+  const mesh = new THREE.Mesh(PART_GEOMETRY[part], mats);
+  mesh.position.set(...PART_POSITIONS[part]);
+  partMeshes[part] = mesh;
+  bodyGroup.add(mesh);
+}
+bodyGroup.position.y = 1.0; // lift so legs aren't below origin
+
+function updateBodyMaterials() {
+  for (const part in partMeshes) {
+    const c = new THREE.Color(state.bodyColors[part]);
+    const mats = partMeshes[part].material;
+    mats.forEach(m => { m.color = c; });
+  }
+}
+updateBodyMaterials();
+
+function resizeRenderer() {
+  const size = els.preview.clientWidth;
+  renderer.setSize(size, size, false);
+  camera.aspect = 1;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resizeRenderer);
+resizeRenderer();
+
+function animate() {
+  requestAnimationFrame(animate);
+  bodyGroup.rotation.y += 0.006;
+  renderer.render(scene, camera);
+}
+animate();
+
+/* ---------------- Hat & Face: pre-fetched meshes/textures from avatar-data ---------------- */
+
+const HATS_BASE = 'avatar-data/hats/';
+const FACES_BASE = 'avatar-data/faces/';
+const textureCache = new Map(); // path -> Promise<THREE.Texture>
+const meshCache = new Map(); // id -> Promise<THREE.BufferGeometry>
+const metaCache = new Map(); // id -> Promise<object>
+
+function fetchTexture(path) {
+  if (!textureCache.has(path)) {
+    textureCache.set(path, new Promise((resolve, reject) => {
+      new THREE.TextureLoader().load(path, tex => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        resolve(tex);
+      }, undefined, reject);
+    }));
+  }
+  return textureCache.get(path);
+}
+
+// Parse the pre-converted binary mesh format: int32 vertexCount, then
+// Float32 positions, normals, uvs (see avatar-data fetch script).
+function parseMeshBinary(buf) {
+  const view = new DataView(buf);
+  const n = view.getInt32(0, true);
+  const positions = new Float32Array(buf, 4, n * 3);
+  const normals = new Float32Array(buf, 4 + n * 3 * 4, n * 3);
+  const uvsRaw = new Float32Array(buf, 4 + n * 3 * 4 * 2, n * 2);
+  const uvs = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) {
+    uvs[i * 2] = uvsRaw[i * 2];
+    uvs[i * 2 + 1] = 1 - uvsRaw[i * 2 + 1];
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions.slice(), 3));
+  geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals.slice(), 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  return geom;
+}
+
+function fetchMesh(id) {
+  if (!meshCache.has(id)) {
+    meshCache.set(id, fetch(HATS_BASE + id + '/mesh.bin')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+      .then(parseMeshBinary));
+  }
+  return meshCache.get(id);
+}
+
+function fetchMeta(id) {
+  if (!metaCache.has(id)) {
+    metaCache.set(id, fetch(HATS_BASE + id + '/meta.json')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .catch(() => ({})));
+  }
+  return metaCache.get(id);
+}
+
+let currentHat = null;
+let currentFace = null;
+let hatLoadToken = 0;
+let faceLoadToken = 0;
+
+function setStatus(msg) { els.previewStatus.textContent = msg; }
+
+async function applyHat() {
+  const token = ++hatLoadToken;
+  if (currentHat) { bodyGroup.remove(currentHat); currentHat.geometry?.dispose(); currentHat = null; }
+  const id = state.selected.hat;
+  if (!id) { setStatus(''); return; }
+  setStatus('Loading hat...');
+  try {
+    const [geom, meta] = await Promise.all([fetchMesh(id), fetchMeta(id)]);
+
+    let material;
+    if (meta.texId) {
+      try {
+        const tex = await fetchTexture(HATS_BASE + id + '/texture.jpg');
+        material = new THREE.MeshStandardMaterial({ map: tex });
+      } catch {
+        material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+      }
+    } else {
+      material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+    }
+
+    if (token !== hatLoadToken) return; // a newer selection superseded this one
+
+    const mesh = new THREE.Mesh(geom, material);
+    // Roblox accessory meshes are authored in stud units already; STUD converts studs to scene units.
+    mesh.scale.set(STUD, STUD, STUD);
+    const att = meta.attachment || { x: 0, y: 0, z: 0 };
+    mesh.position.set(att.x * STUD, (1.5 * STUD + 0.5 * STUD) + att.y * STUD, att.z * STUD);
+    currentHat = mesh;
+    bodyGroup.add(mesh);
+    setStatus('');
+  } catch (err) {
+    if (token === hatLoadToken) setStatus('Hat unavailable');
+    console.warn('Hat load failed for', id, err);
+  }
+}
+
+async function applyFace() {
+  const token = ++faceLoadToken;
+  const id = state.selected.face;
+  // Reset head front face (index 4) to plain color
+  const headMats = partMeshes.head.material;
+  if (currentFace) {
+    headMats[4] = plainMaterial(state.bodyColors.head);
+    currentFace = null;
+  }
+  if (!id) return;
+  setStatus('Loading face...');
+  try {
+    const tex = await fetchTexture(FACES_BASE + id + '.jpg');
+
+    if (token !== faceLoadToken) return;
+
+    headMats[4] = new THREE.MeshStandardMaterial({ map: tex, color: state.bodyColors.head });
+    currentFace = tex;
+    setStatus('');
+  } catch (err) {
+    if (token === faceLoadToken) setStatus('Face unavailable');
+    console.warn('Face load failed for', id, err);
+  }
+}
+
+/* ---------------- Shirt/Pants upload ---------------- */
+
+function setupUpload(dropId, fileId, clearId, canvas, regions, texture) {
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(fileId);
+  const clearBtn = document.getElementById(clearId);
+  drop.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, TEMPLATE_W, TEMPLATE_H);
+      ctx.drawImage(img, 0, 0, TEMPLATE_W, TEMPLATE_H);
+      texture.needsUpdate = true;
+      drop.classList.add('has-img');
+      let thumb = drop.querySelector('img.av-thumb');
+      if (!thumb) { thumb = document.createElement('img'); thumb.className = 'av-thumb'; drop.appendChild(thumb); }
+      thumb.src = URL.createObjectURL(file);
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+  clearBtn.addEventListener('click', () => {
+    const fresh = makeTemplateCanvas(regions);
+    canvas.getContext('2d').drawImage(fresh, 0, 0);
+    texture.needsUpdate = true;
+    drop.classList.remove('has-img');
+    const thumb = drop.querySelector('img.av-thumb');
+    if (thumb) thumb.remove();
+    input.value = '';
+  });
+}
+setupUpload('shirtDrop', 'shirtFile', 'shirtClear', shirtCanvas, SHIRT_REGIONS, shirtTexture);
+setupUpload('pantsDrop', 'pantsFile', 'pantsClear', pantsCanvas, PANTS_REGIONS, pantsTexture);
+
+/* ---------------- Catalog load + init ---------------- */
+
+fetch('avatar-data/catalog.json')
+  .then(r => r.json())
+  .then(data => {
+    state.catalog = data;
+    TYPES.forEach(type => { state.byType[type] = data.filter(it => it.type === type); });
+    applyAll();
+    renderTabs();
+    renderItemGrid();
+  })
+  .catch(err => {
+    els.itemGrid.innerHTML = '<div style="color:#e57373;font-size:0.8rem">Failed to load catalog: ' + err.message + '</div>';
+  });
+
+applyAll();
+</script>
+</body>
+</html>
