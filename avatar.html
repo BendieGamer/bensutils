@@ -70,6 +70,9 @@
   .item-cell:hover { border-color: #94a3b8; }
   .item-cell img { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
   .item-cell.none { display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #94a3b8; text-align: center; }
+  .item-cell.unavailable { opacity: 0.4; }
+  .item-cell.unavailable::after { content: '\2193'; position: absolute; bottom: 1px; right: 3px; font-size: 0.7rem; color: #94a3b8; }
+  .item-cell { position: relative; }
   .item-name { font-size: 0.7rem; color: #94a3b8; margin-top: 8px; min-height: 1em; }
   .actions { display: flex; gap: 10px; margin-top: 4px; }
   .btn { display: inline-block; padding: 10px 16px; border-radius: 999px; background: #0f172a; border: 1px solid #475569; color: #f8fafc; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; }
@@ -148,8 +151,10 @@
 <script type="module">
 import * as THREE from 'three';
 
-const TYPES = ['Hat', 'Face', 'Gear'];
-const SLOT_FOR_TYPE = { Hat: 'hat', Face: 'face', Gear: 'gear' };
+const TYPES = ['Hat', 'Face', 'Shirt', 'Pants', 'Gear'];
+const SLOT_FOR_TYPE = { Hat: 'hat', Face: 'face', Shirt: 'shirt', Pants: 'pants', Gear: 'gear' };
+// Slots whose real 3D art is loaded from local pre-supplied clothing templates.
+const CLOTHING_SLOTS = { shirt: 'Shirt', pants: 'Pants' };
 
 const COLOR_PALETTE = ['#FFD800','#A1A5A2','#CC9966','#7C9C8E','#1A1A1A','#A3A2A5','#C70000','#0033CC','#7DC353','#FFFFFF','#F58020','#9B5DAB','#5B6770','#955F4D'];
 
@@ -157,7 +162,7 @@ const state = {
   catalog: [],
   byType: {},
   bodyColors: { head:'#FFD800', torso:'#A1A5A2', armL:'#FFD800', armR:'#FFD800', legL:'#1A1A1A', legR:'#1A1A1A' },
-  selected: { hat:null, face:null, gear:null },
+  selected: { hat:null, face:null, shirt:null, pants:null, gear:null },
   currentTab: 'Hat'
 };
 
@@ -216,11 +221,47 @@ function applyAll() {
   renderEquipped();
   applyHat();
   applyFace();
+  applyClothing('shirt');
+  applyClothing('pants');
+}
+
+// Availability of local clothing templates: id -> Promise<boolean> (resolved once probed).
+const clothingAvailable = { shirt: new Map(), pants: new Map() };
+function probeClothing(which, id) {
+  const cache = clothingAvailable[which];
+  if (!cache.has(id)) {
+    cache.set(id, new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = 'avatar-data/clothes/' + which + '/' + id + '.png';
+    }));
+  }
+  return cache.get(id);
+}
+
+let shirtLoadToken = 0, pantsLoadToken = 0;
+async function applyClothing(which) {
+  const token = (which === 'pants' ? ++pantsLoadToken : ++shirtLoadToken);
+  const id = state.selected[which];
+  if (!id) { drawBlankTemplate(which); return; }
+  setStatus('Loading ' + which + '...');
+  const ok = await loadClothingTemplate(which, id);
+  if (token !== (which === 'pants' ? pantsLoadToken : shirtLoadToken)) return;
+  if (ok) { setStatus(''); }
+  else {
+    // No local template for this id — revert to blank and flag it.
+    state.selected[which] = null;
+    drawBlankTemplate(which);
+    setStatus(which.charAt(0).toUpperCase() + which.slice(1) + ' not downloaded');
+    renderEquipped();
+    renderItemGrid();
+  }
 }
 
 function randomColor() { return COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]; }
 
-function randomize() {
+async function randomize() {
   state.bodyColors.head = randomColor();
   state.bodyColors.torso = randomColor();
   const armColor = randomColor();
@@ -230,22 +271,39 @@ function randomize() {
   state.bodyColors.legL = legColor;
   state.bodyColors.legR = legColor;
 
-  TYPES.forEach(type => {
+  const pickPromises = TYPES.map(async type => {
     const slot = SLOT_FOR_TYPE[type];
     const items = state.byType[type] || [];
     if (items.length === 0) { state.selected[slot] = null; return; }
-    // ~35% chance of "None" for hat/face/gear
+    // ~35% chance of "None"
     if (Math.random() < 0.35) { state.selected[slot] = null; return; }
+    if (slot === 'shirt' || slot === 'pants') {
+      // Only randomize among clothing that has a local template available.
+      const probes = await Promise.all(items.map(it => probeClothing(slot, it.id).then(ok => ok ? it : null)));
+      const available = probes.filter(Boolean);
+      state.selected[slot] = available.length ? available[Math.floor(Math.random() * available.length)].id : null;
+      return;
+    }
     state.selected[slot] = items[Math.floor(Math.random() * items.length)].id;
   });
 
+  await Promise.all(pickPromises);
   applyAll();
   renderItemGrid();
 }
 
 function resetAll() {
   state.bodyColors = { head:'#FFD800', torso:'#A1A5A2', armL:'#FFD800', armR:'#FFD800', legL:'#1A1A1A', legR:'#1A1A1A' };
-  state.selected = { hat:null, face:null, gear:null };
+  state.selected = { hat:null, face:null, shirt:null, pants:null, gear:null };
+  // Clear any uploaded-texture state on the drop zones.
+  ['shirt', 'pants'].forEach(which => {
+    const drop = document.getElementById(which + 'Drop');
+    if (drop) {
+      drop.classList.remove('has-img');
+      const thumb = drop.querySelector('img.av-thumb');
+      if (thumb) thumb.remove();
+    }
+  });
   applyAll();
   renderItemGrid();
 }
@@ -279,6 +337,7 @@ function renderItemGrid() {
     renderEquipped(); renderItemGrid(); els.itemName.textContent = '';
     if (slot === 'hat') applyHat();
     if (slot === 'face') applyFace();
+    if (slot === 'shirt' || slot === 'pants') applyClothing(slot);
   };
   els.itemGrid.appendChild(noneCell);
 
@@ -299,7 +358,12 @@ function renderItemGrid() {
       els.itemName.textContent = it.name;
       if (slot === 'hat') applyHat();
       if (slot === 'face') applyFace();
+      if (slot === 'shirt' || slot === 'pants') applyClothing(slot);
     };
+    // For clothing slots, mark cells whose local template is missing.
+    if (slot === 'shirt' || slot === 'pants') {
+      probeClothing(slot, it.id).then(ok => { if (!ok) cell.classList.add('unavailable'); });
+    }
     els.itemGrid.appendChild(cell);
   });
 }
@@ -361,13 +425,26 @@ const pantsTexture = new THREE.CanvasTexture(pantsCanvas);
 shirtTexture.colorSpace = THREE.SRGBColorSpace;
 pantsTexture.colorSpace = THREE.SRGBColorSpace;
 
+// Track the cloned region textures per source so we can refresh them when the
+// underlying template canvas changes (upload or local-template load).
+const shirtRegionTextures = [];
+const pantsRegionTextures = [];
+
 // Build a per-face material array for a box, where one face samples a region of a template texture.
 function regionMaterial(baseColor, texture, region) {
   const tex = texture.clone();
   tex.needsUpdate = true;
   tex.repeat.set(region.w / TEMPLATE_W, region.h / TEMPLATE_H);
   tex.offset.set(region.x / TEMPLATE_W, 1 - (region.y + region.h) / TEMPLATE_H);
+  (texture === shirtTexture ? shirtRegionTextures : pantsRegionTextures).push(tex);
   return new THREE.MeshStandardMaterial({ color: baseColor, map: tex });
+}
+
+// Flag all region clones for a template so the GPU re-uploads the changed canvas.
+function refreshClothing(which) {
+  const list = which === 'pants' ? pantsRegionTextures : shirtRegionTextures;
+  (which === 'pants' ? pantsTexture : shirtTexture).needsUpdate = true;
+  list.forEach(t => { t.needsUpdate = true; });
 }
 function plainMaterial(baseColor) {
   return new THREE.MeshStandardMaterial({ color: baseColor });
@@ -620,7 +697,7 @@ async function applyFace() {
 
 /* ---------------- Shirt/Pants upload ---------------- */
 
-function setupUpload(dropId, fileId, clearId, canvas, regions, texture) {
+function setupUpload(dropId, fileId, clearId, canvas, regions, which) {
   const drop = document.getElementById(dropId);
   const input = document.getElementById(fileId);
   const clearBtn = document.getElementById(clearId);
@@ -633,7 +710,11 @@ function setupUpload(dropId, fileId, clearId, canvas, regions, texture) {
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, TEMPLATE_W, TEMPLATE_H);
       ctx.drawImage(img, 0, 0, TEMPLATE_W, TEMPLATE_H);
-      texture.needsUpdate = true;
+      refreshClothing(which);
+      // An explicit upload overrides any catalog selection for this slot.
+      state.selected[which] = null;
+      renderEquipped();
+      if (state.currentTab === (which === 'shirt' ? 'Shirt' : 'Pants')) renderItemGrid();
       drop.classList.add('has-img');
       let thumb = drop.querySelector('img.av-thumb');
       if (!thumb) { thumb = document.createElement('img'); thumb.className = 'av-thumb'; drop.appendChild(thumb); }
@@ -643,17 +724,47 @@ function setupUpload(dropId, fileId, clearId, canvas, regions, texture) {
     img.src = URL.createObjectURL(file);
   });
   clearBtn.addEventListener('click', () => {
-    const fresh = makeTemplateCanvas(regions);
-    canvas.getContext('2d').drawImage(fresh, 0, 0);
-    texture.needsUpdate = true;
+    state.selected[which] = null;
+    drawBlankTemplate(which);
     drop.classList.remove('has-img');
     const thumb = drop.querySelector('img.av-thumb');
     if (thumb) thumb.remove();
     input.value = '';
+    renderEquipped();
+    if (state.currentTab === (which === 'shirt' ? 'Shirt' : 'Pants')) renderItemGrid();
   });
 }
-setupUpload('shirtDrop', 'shirtFile', 'shirtClear', shirtCanvas, SHIRT_REGIONS, shirtTexture);
-setupUpload('pantsDrop', 'pantsFile', 'pantsClear', pantsCanvas, PANTS_REGIONS, pantsTexture);
+setupUpload('shirtDrop', 'shirtFile', 'shirtClear', shirtCanvas, SHIRT_REGIONS, 'shirt');
+setupUpload('pantsDrop', 'pantsFile', 'pantsClear', pantsCanvas, PANTS_REGIONS, 'pants');
+
+// Reset a clothing template canvas to the blank labeled layout.
+function drawBlankTemplate(which) {
+  const canvas = which === 'pants' ? pantsCanvas : shirtCanvas;
+  const regions = which === 'pants' ? PANTS_REGIONS : SHIRT_REGIONS;
+  const fresh = makeTemplateCanvas(regions);
+  canvas.getContext('2d').clearRect(0, 0, TEMPLATE_W, TEMPLATE_H);
+  canvas.getContext('2d').drawImage(fresh, 0, 0);
+  refreshClothing(which);
+}
+
+// Load a local 585x559 clothing-template PNG (from avatar-data/clothes/) onto the body.
+// Returns a promise that resolves true if the file existed and was applied, false otherwise.
+function loadClothingTemplate(which, id) {
+  const canvas = which === 'pants' ? pantsCanvas : shirtCanvas;
+  const url = 'avatar-data/clothes/' + which + '/' + id + '.png';
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, TEMPLATE_W, TEMPLATE_H);
+      ctx.drawImage(img, 0, 0, TEMPLATE_W, TEMPLATE_H);
+      refreshClothing(which);
+      resolve(true);
+    };
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
 
 /* ---------------- Catalog load + init ---------------- */
 
