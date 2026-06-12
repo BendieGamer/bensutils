@@ -371,7 +371,7 @@ input[type=file]{display:none}
 
 <!-- ════════════ EDITOR ════════════ -->
 <div class="editor">
-  <div class="editor-hd">ROBLOX Profile Generator — 2011<span style="float:right;font-weight:normal;opacity:.8">v1.2</span></div>
+  <div class="editor-hd">ROBLOX Profile Generator — 2011<span style="float:right;font-weight:normal;opacity:.8">v1.3</span></div>
   <div class="editor-body">
 
     <div class="esect">Avatar</div>
@@ -884,8 +884,10 @@ function generate() {
   if (isMod) memHtml += `<img src="moderator.png" style="max-height:44px;object-fit:contain">`;
   memArea.innerHTML = memHtml;
 
-  /* blurb */
-  document.getElementById('out-blurb').textContent = blurb;
+  /* blurb — hide the box entirely when there's no text */
+  const blurbSpan = document.getElementById('out-blurb');
+  blurbSpan.textContent = blurb;
+  blurbSpan.closest('.UserBlurb').style.display = blurb.trim() ? 'block' : 'none';
 
   /* stats shown in AlertSpace and in Statistics section below */
 
