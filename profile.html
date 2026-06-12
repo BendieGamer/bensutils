@@ -252,6 +252,7 @@ input[type=file]{display:none}
 #prof-out .ps-icon{width:16px;height:16px;display:inline-block;flex-shrink:0;
   background:var(--head_infobox_icons) no-repeat 0 0;background-size:16px 128px}
 #prof-out .ps-icon.ps-hats{background-position:0 -64px}
+#prof-out .ps-icon.ps-friends{background-position:0 -80px}
 #prof-out .ps-icon.ps-tickets{background-position:0 -96px}
 #prof-out .ps-icon.ps-robux{background-position:0 -32px}
 #prof-out .ps-icon.ps-sales{background-position:0 0}
@@ -578,8 +579,8 @@ input[type=file]{display:none}
           <!-- Stats 2x2 grid (ProfileAlertPanel) -->
           <div class="ProfileAlertPanel" id="out-stats-panel">
             <div class="ps-cell">
-              <span class="ps-icon ps-hats"></span>
-              <span id="out-hats">1</span>
+              <span class="ps-icon ps-friends"></span>
+              <span id="out-friends-panel">0</span>
             </div>
             <div class="ps-cell">
               <span class="ps-icon ps-tickets"></span>
@@ -846,7 +847,7 @@ function generate() {
   document.getElementById('out-tickets').textContent = tickets;
 
   /* profile panel stats */
-  document.getElementById('out-hats').textContent = hats;
+  document.getElementById('out-friends-panel').textContent = frCount;
   document.getElementById('out-tickets-stat').textContent = tickets;
   document.getElementById('out-robux-stat').textContent = robux;
   document.getElementById('out-sales').textContent = sales;
