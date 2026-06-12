@@ -78,10 +78,10 @@ input[type=file]{display:none}
 #prof-out .AlertSpace a{position:absolute;width:86px;padding-left:22px;
   background:var(--head_infobox_icons) no-repeat 2px center;text-decoration:none;font-size:11px;
   white-space:nowrap;overflow:hidden;font-weight:bold;line-height:16px}
-#prof-out .AlertSpace .MessageAlert a{left:4px;top:8px;color:#444;background-position:-2px -81px}
-#prof-out .AlertSpace .FriendsAlert a{left:104px;top:8px;color:#05b;background-position:-2px -121px}
+#prof-out .AlertSpace .MessageAlert a{left:4px;top:8px;color:#444;background-position:-2px 0}
+#prof-out .AlertSpace .FriendsAlert a{left:104px;top:8px;color:#05b;background-position:-2px -81px}
 #prof-out .AlertSpace .RobuxAlert a{left:4px;top:36px;color:#080;background-position:-2px -41px}
-#prof-out .AlertSpace .TicketsAlert a{left:104px;top:36px;color:#a61;background-position:-2px 0}
+#prof-out .AlertSpace .TicketsAlert a{left:104px;top:36px;color:#a61;background-position:-2px -121px}
 
 /* Navigation — real topNav_blue image from archive */
 #prof-out #Navigation{
@@ -225,7 +225,7 @@ input[type=file]{display:none}
 /* Avatar */
 #prof-out .avatar-wrap{text-align:center;margin:4px auto}
 #prof-out .avatar-wrap a{display:inline-block;height:200px;width:150px}
-#prof-out .avatar-wrap img{width:150px;height:200px;object-fit:cover;display:block}
+#prof-out .avatar-wrap img{width:150px;height:200px;object-fit:contain;display:block}
 #prof-out .avatar-placeholder{width:150px;height:200px;background:#d0d8e8;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#888;border:1px solid #aaa}
 
 /* Blurb */
@@ -566,7 +566,7 @@ input[type=file]{display:none}
           <!-- Avatar -->
           <div class="avatar-wrap">
             <a id="out-avatar-link" href="#" onclick="return false">
-              <img id="out-avatar-img" src="" width="150" height="200" style="display:none;object-fit:cover" alt="">
+              <img id="out-avatar-img" src="" width="150" height="200" style="display:none;object-fit:contain" alt="">
             </a>
             <div id="out-avatar-placeholder" class="avatar-placeholder">no<br>avatar</div>
           </div>
