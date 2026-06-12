@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>ROBLOX Profile Generator — 2011</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ════ EDITOR CHROME ════ */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -465,6 +466,7 @@ input[type=file]{display:none}
 
     <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
       <button class="ebtn ebtn-go" onclick="generate()">Generate Profile</button>
+      <button class="ebtn" onclick="downloadProfileImage()">Download Image</button>
       <input type="text" id="save-name" placeholder="Save name" style="flex:1;min-width:140px;padding:3px 6px;border:1px solid #999;background:#fff;font-family:Verdana;font-size:11px">
       <button class="ebtn" onclick="saveCurrent()">Save</button>
       <select id="save-list" style="padding:3px 6px;border:1px solid #999;background:#fff;font-family:Verdana;font-size:11px;min-width:140px">
@@ -877,11 +879,10 @@ function generate() {
     avatarPh.style.display  = 'inline-flex';
   }
 
-  /* membership / mod badge */
+  /* mod badge (membership badge below avatar intentionally not shown) */
   const memArea = document.getElementById('out-mem-area');
-  const memSrcs = {BC:'BC.png', TBC:'TBC.jpg', OBC:'OBC.png'};
-  let memHtml = memSrcs[mem] ? `<img src="${memSrcs[mem]}" style="max-height:44px;object-fit:contain">` : '';
-  if (isMod) memHtml += `<img src="moderator.png" style="max-height:44px;object-fit:contain;margin-left:4px">`;
+  let memHtml = '';
+  if (isMod) memHtml += `<img src="moderator.png" style="max-height:44px;object-fit:contain">`;
   memArea.innerHTML = memHtml;
 
   /* blurb */
@@ -1182,6 +1183,43 @@ addPlace({name:'my domain'});
 addPlace({name:'Untitled Retro'});
 addPlace({name:'Untitled Game'});
 for(let i=1;i<=15;i++) addGroup({name:'Group '+i});
+
+/* ════ Download whole profile as PNG ════ */
+async function downloadProfileImage(){
+  const msg = document.getElementById('save-msg');
+  const node = document.getElementById('prof-out');
+  if(typeof html2canvas === 'undefined'){
+    msg.style.color='#a00';
+    msg.textContent='Capture library failed to load — check your internet connection.';
+    return;
+  }
+  // Make sure the rendered profile reflects the latest inputs first.
+  generate();
+  msg.style.color='#004400';
+  msg.textContent='Rendering image…';
+  try{
+    const canvas = await html2canvas(node, {
+      backgroundColor:'#ffffff',
+      scale: Math.min(window.devicePixelRatio || 1, 2),
+      useCORS:true,
+      logging:false,
+      windowWidth: node.scrollWidth,
+      windowHeight: node.scrollHeight
+    });
+    const uname = (document.getElementById('p-username').value || 'profile')
+      .replace(/[^a-z0-9_-]+/gi,'_').slice(0,40) || 'profile';
+    const link = document.createElement('a');
+    link.download = 'roblox-profile-' + uname + '.png';
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    msg.textContent='Image downloaded!';
+  }catch(err){
+    msg.style.color='#a00';
+    msg.textContent='Could not generate image: ' + (err && err.message ? err.message : err);
+  }
+}
 </script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body,td,input,textarea,select,button{font-family:Verdana,Geneva,sans-serif;font-size:11px;color:#000}
@@ -76,6 +77,7 @@ input[type=file]{display:none}
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center">
       <button class="btn" onclick="addPost()">+ Add reply</button>
       <button class="btn btn-go" onclick="generate()">Generate thread</button>
+      <button class="btn" onclick="downloadThreadImage()">Download Image</button>
       <input id="save-name" type="text" placeholder="Save name" style="flex:1;min-width:180px;padding:4px 8px;border:1px solid #999;background:#fff;color:#000">
       <button class="btn" onclick="saveCurrent()">Save</button>
       <select id="save-list" style="padding:4px 8px;border:1px solid #999;background:#fff;color:#000;min-width:180px">
@@ -342,4 +344,41 @@ function loadSave(data){
 
 updateSaveList();
 addPost();addPost();addPost();
+
+/* ════ Download whole thread as PNG ════ */
+async function downloadThreadImage(){
+  const msg = document.getElementById('save-message');
+  if(typeof html2canvas === 'undefined'){
+    msg.style.color='#a00';
+    msg.textContent='Capture library failed to load — check your internet connection.';
+    return;
+  }
+  // Make sure the rendered thread reflects the latest inputs first.
+  generate();
+  const node = document.getElementById('fout');
+  msg.style.color='#004400';
+  msg.textContent='Rendering image…';
+  try{
+    const canvas = await html2canvas(node, {
+      backgroundColor:'#ffffff',
+      scale: Math.min(window.devicePixelRatio || 1, 2),
+      useCORS:true,
+      logging:false,
+      windowWidth: node.scrollWidth,
+      windowHeight: node.scrollHeight
+    });
+    const ttl = (document.getElementById('ttl').value || 'thread')
+      .replace(/[^a-z0-9_-]+/gi,'_').slice(0,40) || 'thread';
+    const link = document.createElement('a');
+    link.download = 'roblox-forum-' + ttl + '.png';
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    msg.textContent='Image downloaded!';
+  }catch(err){
+    msg.style.color='#a00';
+    msg.textContent='Could not generate image: ' + (err && err.message ? err.message : err);
+  }
+}
 </script>
