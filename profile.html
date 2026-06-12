@@ -390,7 +390,6 @@ input[type=file]{display:none}
     <div class="erow"><label>Place Visits</label><input type="number" id="p-visits" value="0"></div>
     <div class="erow">
       <label>Messages</label><input type="number" id="p-messages" value="0">
-      <label style="min-width:auto">Friends</label><input type="number" id="p-friendcount" value="0">
       <label style="min-width:auto">R$</label><input type="number" id="p-robux" value="6">
       <label style="min-width:auto">Tickets</label><input type="number" id="p-tickets" value="0">
     </div>
@@ -824,7 +823,6 @@ function generate() {
   const frCount   = document.getElementById('p-friends').value||'0';
   const visCount  = document.getElementById('p-visits').value||'0';
   const messages  = document.getElementById('p-messages').value||'0';
-  const friendCount2 = document.getElementById('p-friendcount').value||'0';
   const tickets   = document.getElementById('p-tickets').value||'0';
   const robux     = document.getElementById('p-robux').value||'0';
   const hats      = document.getElementById('p-hats').value||'0';
@@ -843,7 +841,7 @@ function generate() {
   /* banner stats */
   document.getElementById('out-hi-name').textContent = username;
   document.getElementById('out-messages').textContent = messages;
-  document.getElementById('out-friendcount').textContent = friendCount2;
+  document.getElementById('out-friendcount').textContent = frCount;
   document.getElementById('out-robux').textContent = robux;
   document.getElementById('out-tickets').textContent = tickets;
 
@@ -1079,7 +1077,6 @@ function readState(){
     friendCount:document.getElementById('p-friends').value,
     visits:document.getElementById('p-visits').value,
     messages:document.getElementById('p-messages').value,
-    friendCount2:document.getElementById('p-friendcount').value,
     tickets:document.getElementById('p-tickets').value,
     robux:document.getElementById('p-robux').value,
     hats:document.getElementById('p-hats').value,
@@ -1127,7 +1124,6 @@ function applyState(d){
   document.getElementById('p-friends').value=d.friendCount||'0';
   document.getElementById('p-visits').value=d.visits||'0';
   document.getElementById('p-messages').value=d.messages||'0';
-  document.getElementById('p-friendcount').value=d.friendCount2||'0';
   document.getElementById('p-tickets').value=d.tickets||'0';
   document.getElementById('p-robux').value=d.robux||'0';
   document.getElementById('p-hats').value=d.hats||'0';
