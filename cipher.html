@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>arg::cipher_forge — Ben's Utils</title>
+<style>
+  :root { color: #e2e8f0; background: #030406; font-family: Inter, Verdana, Geneva, sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: #030406; color: #e2e8f0; }
+  a { color: #aaccff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .page { min-height: 100vh; display: grid; place-items: start center; padding: 24px; }
+  .container { width: min(980px, 100%); }
+  .panel { width: 100%; padding: 32px; background: rgba(15, 23, 42, 0.96); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 20px; }
+  .panel h1 { margin: 0 0 14px; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.04em; }
+  .panel > p { margin: 0 0 28px; line-height: 1.8; color: #cbd5e1; }
+  .back-link { display: inline-block; margin-bottom: 1em; color: #aaccff; }
+  h2 { font-size: 1.1rem; color: #f8fafc; margin: 0 0 12px; }
+  label { font-size: 0.9rem; color: #cbd5e1; display: block; margin-bottom: 4px; }
+  textarea, input[type=text], select {
+    font-family: "Courier New", monospace; font-size: 0.95em; width: 100%;
+    background: #0d1117; color: #e0e0e0; border: 1px solid #444; border-radius: 6px; padding: 0.6em;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .row > * { flex: 1 1 auto; }
+  .toggle { display: inline-flex; border: 1px solid #475569; border-radius: 999px; overflow: hidden; flex: 0 0 auto; }
+  .toggle button { background: #0f172a; color: #cbd5e1; border: none; padding: 8px 18px; cursor: pointer; font-weight: 700; }
+  .toggle button.on { background: #4a6ea8; color: #fff; }
+  button.btn { font-family: inherit; font-size: 0.95em; padding: 0.5em 1em; background: #2a2a2a; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; }
+  button.btn:hover { background: #333; border-color: #777; }
+  button.btn.go { background: #4a6ea8; color: #fff; border-color: #2a4e88; }
+  button.btn.go:hover { background: #3a5e98; }
+  .card { padding: 18px; border: 1px solid rgba(148,163,184,0.14); border-radius: 14px; background: rgba(15,23,42,0.8); margin-bottom: 16px; }
+  .card .out { font-family: "Courier New", monospace; background: #0d0d0d; border: 1px solid #333; border-radius: 6px; padding: 0.7em; min-height: 2.4em; white-space: pre-wrap; word-break: break-word; color: #9fe6a0; }
+  .card .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .hint { font-size: 0.8rem; color: #94a3b8; margin: 4px 0 0; }
+  .key-field { display: none; }
+  .key-field.show { display: block; }
+  hr { border: none; border-top: 1px solid #2a3550; margin: 28px 0; }
+  .stack-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .stack-row select { flex: 1; }
+  .stack-row input[type=text] { flex: 1; }
+  .footer { margin-top: 2em; font-size: 0.85em; color: #777; text-align: center; }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="container">
+    <div class="panel">
+      <a href="./index.html" class="back-link">&larr; back to home</a>
+      <h1>arg::cipher_forge</h1>
+      <p>Encode (or decode) text into the classic ARG cipher set. Flip the mode toggle to verify your own puzzle, or chain encodings in the <strong>mystery stack</strong> for multi-step clues.</p>
+
+      <div class="row">
+        <div style="flex:1 1 100%">
+          <label for="input">your text</label>
+          <textarea id="input" placeholder="type the secret message here...">the answer lies beneath</textarea>
+        </div>
+      </div>
+      <div class="row">
+        <div class="toggle" id="mode-toggle">
+          <button data-mode="encode" class="on">encode</button>
+          <button data-mode="decode">decode</button>
+        </div>
+        <div style="flex:1"></div>
+      </div>
+
+      <hr>
+      <h2>single ciphers</h2>
+      <div id="cipher-cards"></div>
+
+      <hr>
+      <h2>mystery stack — chain multiple steps</h2>
+      <p class="hint">Apply ciphers in order (top → bottom). Decode mode reverses the whole chain automatically.</p>
+      <div id="stack-list"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="stack-add" style="flex:0 0 auto">+ add step</button>
+        <button class="btn go" id="stack-run" style="flex:0 0 auto">run chain</button>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="out" id="stack-out"></div>
+        <div class="actions">
+          <button class="btn" data-copy="stack-out">copy</button>
+          <button class="btn" data-dl="stack-out">download .txt</button>
+        </div>
+      </div>
+
+      <div class="footer">arg::cipher_forge — runs entirely in your browser</div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ───────────────── cipher implementations ─────────────────
+   each cipher: { id, name, needsKey, enc(text,key), dec(text,key) } */
+const A = 'abcdefghijklmnopqrstuvwxyz';
+
+function caesarShift(text, shift) {
+  return text.replace(/[a-z]/gi, c => {
+    const base = c <= 'Z' ? 65 : 97;
+    return String.fromCharCode((c.charCodeAt(0) - base + shift + 26) % 26 + base);
+  });
+}
+
+function rot47(text, dir) {
+  // symmetric: rot47 is its own inverse, dir ignored
+  return text.replace(/[\x21-\x7e]/g, c =>
+    String.fromCharCode(33 + (c.charCodeAt(0) - 33 + 47) % 94));
+}
+
+function atbash(text) {
+  return text.replace(/[a-z]/gi, c => {
+    const base = c <= 'Z' ? 65 : 97;
+    return String.fromCharCode(base + (25 - (c.charCodeAt(0) - base)));
+  });
+}
+
+function a1z26enc(text) {
+  return text.toLowerCase().split('').map(c => {
+    const i = A.indexOf(c);
+    return i >= 0 ? (i + 1) : c;
+  }).join(' ').replace(/\s+/g, ' ').trim();
+}
+function a1z26dec(text) {
+  return text.split(/[\s-]+/).map(tok => {
+    const n = parseInt(tok, 10);
+    return (!isNaN(n) && n >= 1 && n <= 26) ? A[n - 1] : tok;
+  }).join('');
+}
+
+function vigenere(text, key, decode) {
+  if (!key) return text;
+  key = key.toLowerCase().replace(/[^a-z]/g, '');
+  if (!key) return text;
+  let ki = 0;
+  return text.replace(/[a-z]/gi, c => {
+    const base = c <= 'Z' ? 65 : 97;
+    const k = A.indexOf(key[ki % key.length]);
+    ki++;
+    const shift = decode ? -k : k;
+    return String.fromCharCode((c.charCodeAt(0) - base + shift + 26) % 26 + base);
+  });
+}
+
+function b64enc(t) { return btoa(unescape(encodeURIComponent(t))); }
+function b64dec(t) { try { return decodeURIComponent(escape(atob(t.trim()))); } catch { return '[invalid base64]'; } }
+
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function b32enc(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bits = 0, val = 0, out = '';
+  for (const b of bytes) {
+    val = (val << 8) | b; bits += 8;
+    while (bits >= 5) { out += B32[(val >>> (bits - 5)) & 31]; bits -= 5; }
+  }
+  if (bits > 0) out += B32[(val << (5 - bits)) & 31];
+  while (out.length % 8) out += '=';
+  return out;
+}
+function b32dec(str) {
+  str = str.toUpperCase().replace(/=+$/, '').replace(/\s/g, '');
+  let bits = 0, val = 0; const out = [];
+  for (const c of str) {
+    const idx = B32.indexOf(c);
+    if (idx < 0) continue;
+    val = (val << 5) | idx; bits += 5;
+    if (bits >= 8) { out.push((val >>> (bits - 8)) & 255); bits -= 8; }
+  }
+  try { return new TextDecoder().decode(new Uint8Array(out)); } catch { return '[invalid base32]'; }
+}
+
+function hexenc(t) { return Array.from(new TextEncoder().encode(t)).map(b => b.toString(16).padStart(2, '0')).join(' '); }
+function hexdec(t) {
+  const bytes = t.trim().split(/\s+|(?<=..)(?=..)/).filter(Boolean).map(h => parseInt(h, 16));
+  if (bytes.some(isNaN)) return '[invalid hex]';
+  try { return new TextDecoder().decode(new Uint8Array(bytes)); } catch { return '[invalid hex]'; }
+}
+
+function binenc(t) { return Array.from(new TextEncoder().encode(t)).map(b => b.toString(2).padStart(8, '0')).join(' '); }
+function bindec(t) {
+  const bytes = t.trim().split(/\s+/).map(b => parseInt(b, 2));
+  if (bytes.some(isNaN)) return '[invalid binary]';
+  try { return new TextDecoder().decode(new Uint8Array(bytes)); } catch { return '[invalid binary]'; }
+}
+
+function octenc(t) { return Array.from(new TextEncoder().encode(t)).map(b => b.toString(8)).join(' '); }
+function octdec(t) {
+  const bytes = t.trim().split(/\s+/).map(o => parseInt(o, 8));
+  if (bytes.some(isNaN)) return '[invalid octal]';
+  try { return new TextDecoder().decode(new Uint8Array(bytes)); } catch { return '[invalid octal]'; }
+}
+
+const MORSE = { 'a':'.-','b':'-...','c':'-.-.','d':'-..','e':'.','f':'..-.','g':'--.','h':'....','i':'..','j':'.---','k':'-.-','l':'.-..','m':'--','n':'-.','o':'---','p':'.--.','q':'--.-','r':'.-.','s':'...','t':'-','u':'..-','v':'...-','w':'.--','x':'-..-','y':'-.--','z':'--..','0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.','.':'.-.-.-',',':'--..--','?':'..--..','\'':'.----.','!':'-.-.--','/':'-..-.','(':'-.--.',')':'-.--.-','&':'.-...',':':'---...',';':'-.-.-.','=':'-...-','+':'.-.-.','-':'-....-','_':'..--.-','"':'.-..-.','$':'...-..-','@':'.--.-.' };
+const UNMORSE = Object.fromEntries(Object.entries(MORSE).map(([k, v]) => [v, k]));
+function morseEnc(t) { return t.toLowerCase().split('').map(c => c === ' ' ? '/' : (MORSE[c] || '')).join(' ').replace(/\s+/g, ' ').trim(); }
+function morseDec(t) { return t.trim().split(/\s+/).map(code => code === '/' ? ' ' : (UNMORSE[code] || '')).join(''); }
+
+const CIPHERS = [
+  { id: 'rot13',    name: 'ROT13',      enc: t => caesarShift(t, 13), dec: t => caesarShift(t, 13) },
+  { id: 'caesar',   name: 'Caesar (shift 3)', enc: t => caesarShift(t, 3), dec: t => caesarShift(t, -3) },
+  { id: 'rot47',    name: 'ROT47',      enc: t => rot47(t), dec: t => rot47(t) },
+  { id: 'atbash',   name: 'Atbash',     enc: atbash, dec: atbash },
+  { id: 'a1z26',    name: 'A1Z26',      enc: a1z26enc, dec: a1z26dec },
+  { id: 'vigenere', name: 'Vigenère',   needsKey: true, enc: (t, k) => vigenere(t, k, false), dec: (t, k) => vigenere(t, k, true) },
+  { id: 'base64',   name: 'Base64',     enc: b64enc, dec: b64dec },
+  { id: 'base32',   name: 'Base32',     enc: b32enc, dec: b32dec },
+  { id: 'hex',      name: 'Hex',        enc: hexenc, dec: hexdec },
+  { id: 'binary',   name: 'Binary',     enc: binenc, dec: bindec },
+  { id: 'octal',    name: 'Octal',      enc: octenc, dec: octdec },
+  { id: 'morse',    name: 'Morse',      audio: true, enc: morseEnc, dec: morseDec },
+];
+const BY_ID = Object.fromEntries(CIPHERS.map(c => [c.id, c]));
+
+/* ───────────────── state & UI ───────────────── */
+let mode = 'encode';
+const input = document.getElementById('input');
+
+document.querySelectorAll('#mode-toggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('#mode-toggle button').forEach(x => x.classList.toggle('on', x === b));
+    renderAll();
+  });
+});
+
+function runCipher(c, text, key) { return mode === 'encode' ? c.enc(text, key) : c.dec(text, key); }
+
+/* per-cipher cards */
+const cardsHost = document.getElementById('cipher-cards');
+const keyVals = {};
+CIPHERS.forEach(c => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <h2 style="font-size:0.95rem">${c.name}</h2>
+    ${c.needsKey ? `<input type="text" placeholder="key (e.g. roblox)" data-key="${c.id}" style="margin-bottom:8px">` : ''}
+    <div class="out" id="out-${c.id}"></div>
+    <div class="actions">
+      <button class="btn" data-copy="out-${c.id}">copy</button>
+      <button class="btn" data-dl="out-${c.id}">download .txt</button>
+      ${c.audio ? `<button class="btn" data-beep="${c.id}">▶ play audio</button>` : ''}
+    </div>`;
+  cardsHost.appendChild(card);
+  if (c.needsKey) {
+    card.querySelector(`[data-key="${c.id}"]`).addEventListener('input', e => {
+      keyVals[c.id] = e.target.value; renderCard(c);
+    });
+  }
+});
+
+function renderCard(c) {
+  document.getElementById('out-' + c.id).textContent = runCipher(c, input.value, keyVals[c.id] || '');
+}
+function renderAll() { CIPHERS.forEach(renderCard); }
+input.addEventListener('input', renderAll);
+
+/* copy / download (delegated) */
+document.addEventListener('click', e => {
+  const copyId = e.target.dataset?.copy;
+  const dlId = e.target.dataset?.dl;
+  const beepId = e.target.dataset?.beep;
+  if (copyId) {
+    const txt = document.getElementById(copyId).textContent;
+    navigator.clipboard?.writeText(txt);
+    e.target.textContent = 'copied!'; setTimeout(() => e.target.textContent = 'copy', 1200);
+  }
+  if (dlId) {
+    const txt = document.getElementById(dlId).textContent;
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = dlId + '.txt'; a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  if (beepId) playMorse(document.getElementById('out-' + beepId).textContent);
+});
+
+/* morse audio playback via WebAudio */
+function playMorse(code) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const unit = 0.08, freq = 600;
+  let t = ctx.currentTime + 0.05;
+  const beep = (dur) => {
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.frequency.value = freq; osc.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.3, t + 0.005);
+    g.gain.setValueAtTime(0.3, t + dur - 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.start(t); osc.stop(t + dur);
+    t += dur;
+  };
+  for (const ch of code) {
+    if (ch === '.') { beep(unit); t += unit; }
+    else if (ch === '-') { beep(unit * 3); t += unit; }
+    else if (ch === ' ') t += unit * 2;     // between letters (already 1 unit gap)
+    else if (ch === '/') t += unit * 4;     // word gap
+  }
+}
+
+/* ───────────────── mystery stack ───────────────── */
+const stackList = document.getElementById('stack-list');
+function addStackRow(defaultId) {
+  const row = document.createElement('div');
+  row.className = 'stack-row';
+  const opts = CIPHERS.map(c => `<option value="${c.id}"${c.id === defaultId ? ' selected' : ''}>${c.name}</option>`).join('');
+  row.innerHTML = `
+    <select>${opts}</select>
+    <input type="text" placeholder="key (vigenère only)" class="stack-key">
+    <button class="btn" data-remove style="flex:0 0 auto">✕</button>`;
+  row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+  stackList.appendChild(row);
+}
+addStackRow('base64');
+addStackRow('rot13');
+document.getElementById('stack-add').addEventListener('click', () => addStackRow('atbash'));
+
+document.getElementById('stack-run').addEventListener('click', () => {
+  const rows = [...stackList.querySelectorAll('.stack-row')];
+  const steps = rows.map(r => ({ c: BY_ID[r.querySelector('select').value], key: r.querySelector('.stack-key').value }));
+  let text = input.value;
+  // decode mode reverses the order so a stack round-trips
+  const ordered = mode === 'decode' ? [...steps].reverse() : steps;
+  for (const s of ordered) text = runCipher(s.c, text, s.key);
+  document.getElementById('stack-out').textContent = text;
+});
+
+renderAll();
+</script>
+</body>
+</html>

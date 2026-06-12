@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>arg::stego_kit — Ben's Utils</title>
+<style>
+  :root { color:#e2e8f0; background:#030406; font-family:Inter,Verdana,Geneva,sans-serif; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; min-height:100%; }
+  body { background:#030406; color:#e2e8f0; }
+  a { color:#aaccff; text-decoration:none; } a:hover { text-decoration:underline; }
+  .wrap { max-width:920px; margin:0 auto; padding:24px; }
+  .back-link { display:inline-block; margin-bottom:1em; color:#aaccff; }
+  h1 { font-size:clamp(1.8rem,4vw,2.6rem); letter-spacing:-0.03em; margin:0 0 6px; }
+  .sub { color:#cbd5e1; margin:0 0 22px; line-height:1.7; }
+  .tabs { display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+  .tabs button { background:#0f172a; color:#cbd5e1; border:1px solid #475569; border-radius:999px; padding:8px 16px; cursor:pointer; font-weight:700; font-family:inherit; }
+  .tabs button.on { background:#4a6ea8; color:#fff; border-color:#2a4e88; }
+  .panel { display:none; background:rgba(15,23,42,0.96); border:1px solid rgba(148,163,184,0.18); border-radius:16px; padding:24px; }
+  .panel.on { display:block; }
+  .panel h2 { margin:0 0 6px; font-size:1.1rem; color:#f8fafc; }
+  .panel > p { margin:0 0 18px; color:#cbd5e1; line-height:1.6; font-size:0.92rem; }
+  label { font-size:0.85rem; color:#cbd5e1; display:block; margin:12px 0 4px; }
+  input[type=text], textarea { width:100%; font-family:"Courier New",monospace; font-size:0.92em; background:#0d1117; color:#e0e0e0; border:1px solid #444; border-radius:6px; padding:0.6em; }
+  textarea { resize:vertical; min-height:70px; }
+  .drop { border:2px dashed #475569; border-radius:10px; padding:2em; text-align:center; cursor:pointer; color:#94a3b8; transition:border-color .2s,background .2s; }
+  .drop.over { border-color:#8fb4ff; background:#0d1b33; }
+  button.btn { font-family:inherit; font-size:0.95em; padding:0.6em 1.1em; background:#2a2a2a; color:#e0e0e0; border:1px solid #555; border-radius:6px; cursor:pointer; margin-top:10px; margin-right:6px; }
+  button.btn:hover { background:#333; border-color:#777; }
+  button.btn.go { background:#4a6ea8; color:#fff; border-color:#2a4e88; }
+  button.btn.go:hover { background:#3a5e98; }
+  .mode-toggle { display:inline-flex; border:1px solid #475569; border-radius:999px; overflow:hidden; margin-bottom:8px; }
+  .mode-toggle button { background:#0f172a; color:#cbd5e1; border:none; padding:7px 16px; cursor:pointer; font-weight:700; }
+  .mode-toggle button.on { background:#4a6ea8; color:#fff; }
+  .out { font-family:"Courier New",monospace; background:#0d0d0d; border:1px solid #333; border-radius:6px; padding:0.7em; min-height:2.4em; white-space:pre-wrap; word-break:break-word; color:#9fe6a0; margin-top:10px; }
+  canvas { display:none; }
+  .preview { max-width:100%; max-height:260px; margin-top:12px; border:1px solid #2a3550; border-radius:8px; display:none; }
+  .footnote { font-size:0.8rem; color:#777; text-align:center; margin-top:18px; }
+  .hint { font-size:0.8rem; color:#94a3b8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="./index.html" class="back-link">&larr; back to home</a>
+  <h1>arg::stego_kit</h1>
+  <p class="sub">Hide clues where players won't think to look — inside image pixels, inside invisible characters in ordinary text. Every tool has a reveal mode so you can confirm the secret round-trips before you drop it.</p>
+
+  <div class="tabs">
+    <button class="on" data-tab="lsb">image (LSB)</button>
+    <button data-tab="zw">zero-width text</button>
+    <button data-tab="ws">whitespace</button>
+  </div>
+
+  <!-- ── image LSB ── -->
+  <div class="panel on" id="tab-lsb">
+    <h2>image steganography (LSB)</h2>
+    <p>Embed a secret message in the least-significant bits of a PNG's pixels. The image looks identical; the message rides along invisibly. Export re-encodes as PNG (lossless) — never JPEG, which would destroy the bits.</p>
+    <div class="mode-toggle" id="lsb-mode">
+      <button class="on" data-m="hide">hide</button>
+      <button data-m="reveal">reveal</button>
+    </div>
+    <div class="drop" id="lsb-drop">drop an image here, or click to choose</div>
+    <input type="file" id="lsb-file" accept="image/*" style="display:none">
+    <img class="preview" id="lsb-preview">
+    <div id="lsb-hide-ui">
+      <label>secret message</label>
+      <textarea id="lsb-msg">the key is under the welcome mat</textarea>
+      <button class="btn go" id="lsb-embed">embed &amp; download PNG</button>
+    </div>
+    <div id="lsb-reveal-ui" style="display:none">
+      <button class="btn go" id="lsb-extract">extract message</button>
+      <div class="out" id="lsb-out"></div>
+    </div>
+    <canvas id="lsb-canvas"></canvas>
+  </div>
+
+  <!-- ── zero-width ── -->
+  <div class="panel" id="tab-zw">
+    <h2>zero-width unicode</h2>
+    <p>Encode a hidden message into invisible characters, then splice it into ordinary visible text. Paste the result anywhere — a profile blurb, a forum post, a Discord message — and it looks completely normal. Copy/paste preserves the secret.</p>
+    <div class="mode-toggle" id="zw-mode">
+      <button class="on" data-m="hide">hide</button>
+      <button data-m="reveal">reveal</button>
+    </div>
+    <div id="zw-hide-ui">
+      <label>visible cover text</label>
+      <input type="text" id="zw-cover" value="just another normal post, nothing to see here.">
+      <label>secret message</label>
+      <input type="text" id="zw-secret" value="floor 13 does not exist">
+      <button class="btn go" id="zw-embed">generate</button>
+      <label>result (copy this — the secret is invisible inside it)</label>
+      <div class="out" id="zw-result"></div>
+      <button class="btn" id="zw-copy">copy result</button>
+    </div>
+    <div id="zw-reveal-ui" style="display:none">
+      <label>paste text that may contain a hidden message</label>
+      <textarea id="zw-input"></textarea>
+      <button class="btn go" id="zw-decode">reveal</button>
+      <div class="out" id="zw-out"></div>
+    </div>
+  </div>
+
+  <!-- ── whitespace ── -->
+  <div class="panel" id="tab-ws">
+    <h2>trailing whitespace</h2>
+    <p>Encode the message as spaces (bit 0) and tabs (bit 1) appended to the end of a line. Looks like an empty line; survives most plain-text copy/paste. Great for a clue hidden in a README, a code comment, or a pastebin drop.</p>
+    <div class="mode-toggle" id="ws-mode">
+      <button class="on" data-m="hide">hide</button>
+      <button data-m="reveal">reveal</button>
+    </div>
+    <div id="ws-hide-ui">
+      <label>visible cover line</label>
+      <input type="text" id="ws-cover" value="end of file.">
+      <label>secret message</label>
+      <input type="text" id="ws-secret" value="the gate opens at midnight">
+      <button class="btn go" id="ws-embed">generate &amp; download .txt</button>
+      <p class="hint">The whitespace is invisible on screen — download the .txt to keep it intact.</p>
+    </div>
+    <div id="ws-reveal-ui" style="display:none">
+      <label>paste text containing trailing whitespace</label>
+      <textarea id="ws-input"></textarea>
+      <button class="btn go" id="ws-decode">reveal</button>
+      <div class="out" id="ws-out"></div>
+    </div>
+  </div>
+
+  <p class="footnote">arg::stego_kit — runs entirely in your browser, nothing is uploaded</p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const enc = new TextEncoder(), dec = new TextDecoder();
+
+/* ── tab switching ── */
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'tab-' + b.dataset.tab));
+}));
+
+/* generic hide/reveal mode toggle within a tab */
+function wireMode(toggleId, hideId, revealId) {
+  document.querySelectorAll('#' + toggleId + ' button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#' + toggleId + ' button').forEach(x => x.classList.toggle('on', x === b));
+    const hide = b.dataset.m === 'hide';
+    $(hideId).style.display = hide ? '' : 'none';
+    $(revealId).style.display = hide ? 'none' : '';
+  }));
+}
+wireMode('lsb-mode', 'lsb-hide-ui', 'lsb-reveal-ui');
+wireMode('zw-mode', 'zw-hide-ui', 'zw-reveal-ui');
+wireMode('ws-mode', 'ws-hide-ui', 'ws-reveal-ui');
+
+/* ════════ image LSB ════════ */
+const lsbCanvas = $('lsb-canvas'), lctx = lsbCanvas.getContext('2d', { willReadFrequently: true });
+let lsbImg = null;
+const MAGIC = [0x53, 0x47]; // "SG" marker so reveal knows there's a payload
+
+function loadImage(file) {
+  const r = new FileReader();
+  r.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      lsbImg = img;
+      lsbCanvas.width = img.naturalWidth; lsbCanvas.height = img.naturalHeight;
+      lctx.drawImage(img, 0, 0);
+      const p = $('lsb-preview'); p.src = ev.target.result; p.style.display = 'block';
+    };
+    img.src = ev.target.result;
+  };
+  r.readAsDataURL(file);
+}
+$('lsb-drop').addEventListener('click', () => $('lsb-file').click());
+$('lsb-file').addEventListener('change', e => e.target.files[0] && loadImage(e.target.files[0]));
+['dragover','dragenter'].forEach(ev => $('lsb-drop').addEventListener(ev, e => { e.preventDefault(); $('lsb-drop').classList.add('over'); }));
+['dragleave','drop'].forEach(ev => $('lsb-drop').addEventListener(ev, e => { e.preventDefault(); $('lsb-drop').classList.remove('over'); }));
+$('lsb-drop').addEventListener('drop', e => e.dataTransfer.files[0] && loadImage(e.dataTransfer.files[0]));
+
+function bytesToBits(bytes) {
+  const bits = [];
+  for (const b of bytes) for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1);
+  return bits;
+}
+function bitsToBytes(bits) {
+  const out = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j];
+    out.push(b);
+  }
+  return out;
+}
+
+$('lsb-embed').addEventListener('click', () => {
+  if (!lsbImg) { alert('load an image first'); return; }
+  const msgBytes = enc.encode($('lsb-msg').value);
+  const len = msgBytes.length;
+  // header: MAGIC(2) + length(4 bytes, big-endian) + payload
+  const header = [...MAGIC, (len>>>24)&255, (len>>>16)&255, (len>>>8)&255, len&255];
+  const allBytes = [...header, ...msgBytes];
+  const bits = bytesToBits(allBytes);
+
+  const imgData = lctx.getImageData(0, 0, lsbCanvas.width, lsbCanvas.height);
+  const d = imgData.data;
+  // capacity: 1 bit per R,G,B channel (alpha is left fully opaque & untouched)
+  const capacity = Math.floor(d.length / 4) * 3;
+  if (bits.length > capacity) { alert(`message too big for this image (need ${bits.length} bits, have ${capacity}). use a larger image.`); return; }
+
+  let bi = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    // IMPORTANT: force alpha opaque. Browsers zero-out RGB of fully transparent
+    // pixels when encoding PNG, which would wipe the hidden bits. Opaque = safe.
+    d[i + 3] = 255;
+    for (let c = 0; c < 3; c++) {
+      if (bi < bits.length) d[i + c] = (d[i + c] & 0xFE) | bits[bi++];
+    }
+  }
+  lctx.putImageData(imgData, 0, 0);
+  const dataUrl = lsbCanvas.toDataURL('image/png');
+
+  // download...
+  const a = document.createElement('a');
+  a.href = dataUrl; a.download = 'stego.png'; a.click();
+
+  // ...and reload the encoded result into the canvas so "extract" works
+  // immediately on the real saved pixels (round-trip verified, no re-upload needed)
+  const v = new Image();
+  v.onload = () => {
+    lsbCanvas.width = v.naturalWidth; lsbCanvas.height = v.naturalHeight;
+    lctx.clearRect(0, 0, lsbCanvas.width, lsbCanvas.height);
+    lctx.drawImage(v, 0, 0);
+    lsbImg = v;
+    $('lsb-preview').src = dataUrl;
+  };
+  v.src = dataUrl;
+});
+
+$('lsb-extract').addEventListener('click', () => {
+  if (!lsbImg) { alert('load a stego image first'); return; }
+  const imgData = lctx.getImageData(0, 0, lsbCanvas.width, lsbCanvas.height);
+  const d = imgData.data;
+  const bits = [];
+  for (let i = 0; i < d.length; i += 4) {
+    bits.push(d[i] & 1, d[i + 1] & 1, d[i + 2] & 1); // R,G,B in the same order they were written
+  }
+  const bytes = bitsToBytes(bits);
+  if (bytes[0] !== MAGIC[0] || bytes[1] !== MAGIC[1]) {
+    $('lsb-out').textContent = '[no hidden message found in this image]'; return;
+  }
+  const len = (bytes[2]<<24) | (bytes[3]<<16) | (bytes[4]<<8) | bytes[5];
+  if (len < 0 || len > bytes.length) { $('lsb-out').textContent = '[no hidden message found in this image]'; return; }
+  const payload = bytes.slice(6, 6 + len);
+  try { $('lsb-out').textContent = dec.decode(new Uint8Array(payload)); }
+  catch { $('lsb-out').textContent = '[corrupted payload]'; }
+});
+
+/* ════════ zero-width ════════ */
+const Z0 = '​', Z1 = '‌', ZSEP = '‍'; // zero-width space / non-joiner / joiner
+function zwEncode(secret) {
+  const bits = bytesToBits(enc.encode(secret));
+  return ZSEP + bits.map(b => b ? Z1 : Z0).join('') + ZSEP;
+}
+function zwDecode(text) {
+  const m = text.match(new RegExp(ZSEP + '([' + Z0 + Z1 + ']*)' + ZSEP));
+  if (!m) return null;
+  const bits = [...m[1]].map(c => c === Z1 ? 1 : 0);
+  try { return dec.decode(new Uint8Array(bitsToBytes(bits))); } catch { return null; }
+}
+$('zw-embed').addEventListener('click', () => {
+  const cover = $('zw-cover').value, secret = $('zw-secret').value;
+  // inject the invisible payload after the first character so it survives selection
+  $('zw-result').textContent = cover.slice(0,1) + zwEncode(secret) + cover.slice(1);
+});
+$('zw-copy').addEventListener('click', () => {
+  navigator.clipboard?.writeText($('zw-result').textContent);
+  $('zw-copy').textContent = 'copied!'; setTimeout(() => $('zw-copy').textContent = 'copy result', 1200);
+});
+$('zw-decode').addEventListener('click', () => {
+  const r = zwDecode($('zw-input').value);
+  $('zw-out').textContent = r === null ? '[no hidden message found]' : r;
+});
+
+/* ════════ whitespace (space=0, tab=1) ════════ */
+$('ws-embed').addEventListener('click', () => {
+  const bits = bytesToBits(enc.encode($('ws-secret').value));
+  const ws = bits.map(b => b ? '\t' : ' ').join('');
+  const line = $('ws-cover').value + ws + '\n';
+  const blob = new Blob([line], { type:'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'clue.txt'; a.click();
+  URL.revokeObjectURL(a.href);
+});
+$('ws-decode').addEventListener('click', () => {
+  const text = $('ws-input').value;
+  const m = text.match(/[ \t]+$/m);
+  if (!m) { $('ws-out').textContent = '[no trailing whitespace found]'; return; }
+  const bits = [...m[0]].map(c => c === '\t' ? 1 : 0);
+  try {
+    const s = dec.decode(new Uint8Array(bitsToBytes(bits)));
+    $('ws-out').textContent = s || '[empty]';
+  } catch { $('ws-out').textContent = '[could not decode]'; }
+});
+</script>
+</body>
+</html>
