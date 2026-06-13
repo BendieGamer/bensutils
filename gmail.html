@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2011 Gmail Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ---------- builder chrome (dark, matches site) ---------- */
+:root{color:#e2e8f0;background:#030406;font-family:Inter,Verdana,Geneva,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:#030406;color:#e2e8f0}
+.wrap{max-width:1180px;margin:0 auto;padding:24px}
+.back-link{display:inline-block;margin-bottom:1em;color:#aaccff;text-decoration:none}
+.back-link:hover{text-decoration:underline}
+h1{font-size:1.8rem;letter-spacing:-0.03em;margin:0 0 4px}
+.sub{color:#94a3b8;margin:0 0 20px;font-size:.95rem}
+.builder{background:rgba(15,23,42,.96);border:1px solid rgba(148,163,184,.18);border-radius:16px;padding:20px;margin-bottom:24px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.field{display:flex;flex-direction:column;gap:3px;flex:1;min-width:160px}
+.field label{font-size:.75rem;color:#9fb0c8;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{font-family:inherit;background:#0b1220;color:#e6edf6;border:1px solid #2b3650;border-radius:7px;padding:7px 9px;font-size:.9rem}
+.field textarea{min-height:70px;resize:vertical}
+.seg{display:flex;gap:0;border:1px solid #2b3650;border-radius:8px;overflow:hidden;width:max-content}
+.seg button{background:#0b1220;color:#cbd5e1;border:none;padding:8px 16px;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer}
+.seg button.on{background:#3a5e98;color:#fff}
+.btn{font-family:inherit;font-size:.92rem;font-weight:700;border:1px solid #475569;border-radius:999px;padding:9px 16px;background:#0f172a;color:#f8fafc;cursor:pointer}
+.btn:hover{background:#1e293b}
+.btn-go{background:#4a6ea8;border-color:#2a4e88;color:#fff}
+.btn-go:hover{background:#3a5e98}
+.btn-sm{padding:4px 10px;font-size:.8rem;border-radius:6px}
+.hr{height:1px;background:rgba(148,163,184,.18);margin:16px 0}
+.hint{font-size:.78rem;color:#7c8aa0;margin:2px 0 8px}
+.rows-edit .erow{display:flex;gap:8px;align-items:flex-start;background:#0b1220;border:1px solid #1f2940;border-radius:9px;padding:9px;margin-bottom:8px;flex-wrap:wrap}
+.rows-edit .erow .field{min-width:120px}
+.chk{display:flex;align-items:center;gap:5px;font-size:.8rem;color:#bcc8db;font-weight:600;white-space:nowrap}
+.chk input{accent-color:#4a6ea8}
+.preview-host{overflow:auto;background:#1a1a1a;border:1px solid #333;border-radius:10px;padding:14px}
+
+/* ================= 2011 GMAIL RENDER ================= */
+.gm{width:1000px;background:#fff;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#222;line-height:normal}
+.gm *{box-sizing:border-box}
+.gm a{color:#15c;text-decoration:none}
+
+/* black google nav bar (image 2) */
+.gm-gbar{background:#2d2d2d;height:29px;display:flex;align-items:center;padding:0 8px;color:#ccc;font-size:13px}
+.gm-gbar .gn{color:#ccc;padding:0 7px;line-height:29px}
+.gm-gbar .gn.cur{color:#fff;font-weight:bold}
+.gm-gbar .gn:hover{text-decoration:underline}
+.gm-gbar .sp{flex:1}
+.gm-gbar .gr{color:#ccc;padding:0 6px}
+.gm-gbar .notif{background:#dd4b39;color:#fff;border-radius:2px;padding:1px 5px;font-size:11px;font-weight:bold;margin-right:6px}
+.gm-gbar .ava{width:18px;height:18px;border-radius:2px;background:#9aa;margin-left:6px;display:inline-block;overflow:hidden}
+.gm-gbar .ava img{width:100%;height:100%;object-fit:cover}
+
+/* header strip with logo + search */
+.gm-head{padding:18px 18px 14px;display:flex;align-items:center}
+.gm-logo{font-family:Arial,sans-serif;font-size:34px;font-weight:bold;letter-spacing:-1.5px;width:174px;flex-shrink:0}
+.gm-logo .b{color:#4d90fe}.gm-logo .r{color:#dd4b39}.gm-logo .y{color:#f4b400}.gm-logo .g{color:#0f9d58}
+.gm-logo.purple{color:#681da8}
+.gm-logo.classic{width:170px;padding:0}
+.gm-logo.classic img{width:160px;height:auto;display:block}
+.gm-search{flex:1}
+.gm-search .sbox{display:flex;align-items:stretch}
+.gm-search input{flex:1;max-width:540px;height:38px;border:1px solid #ccc;border-right:none;padding:0 10px;font-size:14px;color:#333;border-radius:1px 0 0 1px;box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
+.gm-search .sbtn{width:54px;background:#4d90fe;background-image:linear-gradient(to bottom,#4d90fe,#4787ed);border:1px solid #3079ed;border-radius:0 2px 2px 0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.gm-search .sbtn svg{width:20px;height:20px}
+.gm-acct{margin-left:18px;white-space:nowrap;text-align:right;font-size:13px;color:#15c}
+
+/* body two-column */
+.gm-body{display:flex;border-top:1px solid #e5e5e5}
+.gm-side{width:158px;flex-shrink:0;padding:14px 0 0 16px;font-size:13px}
+.gm-compose{display:block;text-align:center;background:#d14836;background-image:linear-gradient(to bottom,#dd4b39,#c63224);color:#fff;font-weight:bold;font-size:13px;letter-spacing:.3px;padding:9px 0;width:130px;border-radius:2px;border:1px solid #b0281a;margin-bottom:14px}
+.gm-mail-lbl{color:#dd4b39;font-weight:bold;font-size:15px;cursor:default}
+.gm-nav{list-style:none;margin:6px 0 14px;padding:0}
+.gm-nav li{padding:3px 0 3px 6px;color:#444;display:flex;align-items:center;cursor:pointer}
+.gm-nav li .ct{color:#999;font-weight:normal;margin-left:4px}
+.gm-nav li.cur{background:#e8eef7;color:#dd4b39;font-weight:bold}
+.gm-nav li.cur .ct{color:#dd4b39}
+.gm-nav li.inbox{color:#dd4b39;font-weight:bold}
+.gm-nav li.inbox .ct{color:#dd4b39}
+.gm-nav li .sq{width:11px;height:11px;border-radius:1px;margin-left:auto;margin-right:8px;flex-shrink:0}
+.gm-nav li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gm-sec-h{color:#999;font-size:11px;font-weight:bold;text-transform:none;padding:0 0 3px 4px;border-top:1px solid #ebebeb;padding-top:6px;margin-top:4px}
+.gm-chat-search{margin:2px 4px 6px 0}
+.gm-chat-search input{width:96%;border:1px solid #ccc;padding:3px 4px;font-size:12px}
+.gm-chat{list-style:none;margin:0;padding:0;font-size:12px}
+.gm-chat li{padding:1px 6px 1px 4px;display:flex;align-items:center;color:#222;min-height:17px}
+.gm-chat li:hover{background:#f1f1f1}
+.gm-chat .dot{display:none}
+.gm-chat .cname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#444;font-weight:normal}
+.gm-chat .cicons{display:flex;align-items:center;gap:6px;margin-right:7px;flex-shrink:0}
+.gm-chat .cicons svg{width:13px;height:13px;display:block;fill:#888}
+.gm-chat li .cicons{visibility:hidden}
+.gm-chat li.online .cicons,.gm-chat li:hover .cicons{visibility:visible}
+.gm-chat .me{font-weight:bold;color:#222}
+.gm-chat .substatus{padding:0 6px 3px 4px;color:#aaa;font-size:11px}
+.gm-chat .callphone{padding:1px 6px 4px 4px;display:flex;align-items:center;color:#15c;font-size:12px}
+.gm-chat .callphone svg{width:13px;height:13px;fill:#888;margin-right:6px}
+
+/* main column */
+.gm-main{flex:1;border-left:1px solid #e8e8e8;min-width:0}
+
+/* toolbar */
+.gm-tb{display:flex;align-items:center;padding:10px 14px;gap:0;font-size:13px;color:#666}
+.gm-tb .tbtn{border:1px solid #d4d4d4;background:#fcfcfc;background-image:linear-gradient(to bottom,#fcfcfc,#f1f1f1);padding:6px 10px;border-radius:2px;cursor:pointer;color:#444;display:flex;align-items:center;gap:5px;height:30px}
+.gm-tb .tbtn+.tbtn{border-left:none}
+.gm-tb .tbtn.first{border-radius:2px 0 0 2px}
+.gm-tb .tbtn.last{border-radius:0 2px 2px 0}
+.gm-tb .tbtn:not(.first):not(.last){border-radius:0}
+.gm-tb .tbtn svg{width:16px;height:16px;fill:#777}
+.gm-tb .grp{display:flex;margin-right:14px}
+.gm-tb .cax{display:flex;align-items:center;gap:6px}
+.gm-tb .cax .arr{font-size:9px;color:#777}
+.gm-tb .spacer{flex:1}
+.gm-tb .count{color:#999;font-size:13px;margin:0 8px}
+.gm-tb .count b{color:#444;font-weight:normal}
+.gm-tb .pager{display:flex}
+.gm-tb .gear{margin-left:10px;position:relative}
+.gm-tb .gear .gicon{cursor:pointer}
+.gm-tb .gear svg{width:16px;height:16px;fill:#666}
+
+/* density menu */
+.gm-menu{position:absolute;right:0;top:30px;background:#fff;border:1px solid #ccc;box-shadow:0 2px 4px rgba(0,0,0,.2);width:150px;z-index:30;font-size:13px;padding:6px 0}
+.gm-menu .mh{color:#999;padding:4px 14px;font-size:12px}
+.gm-menu .mi{padding:5px 14px 5px 24px;cursor:pointer;color:#222;position:relative}
+.gm-menu .mi:hover{background:#eee}
+.gm-menu .mi.sel:before{content:"\2713";position:absolute;left:8px;color:#222}
+.gm-menu .sepm{height:1px;background:#ebebeb;margin:5px 0}
+
+/* ad row */
+.gm-ad{display:flex;align-items:center;background:#fdf7e3;border-bottom:1px solid #f3e7b3;padding:4px 10px;font-size:13px}
+.gm-ad .adt{background:#ffe9a8;color:#888;font-size:10px;padding:1px 4px;border-radius:2px;margin-right:8px}
+.gm-ad a{color:#15c}
+.gm-ad .adu{color:#093;font-size:12px;margin-left:6px}
+
+/* list rows */
+.gm-list{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.gm-list tr{border-bottom:1px solid #ebebeb;cursor:pointer}
+.gm-list tr.unread{background:#fff}
+.gm-list tr.read{background:#fff}
+.gm-list tr:hover{background:#f5f5f5}
+.gm-list td{padding:6px 4px;font-size:13px;color:#222;vertical-align:middle;overflow:hidden;white-space:nowrap;height:16px}
+.gm-list .c-chk{width:30px;text-align:center;padding-left:12px}
+.gm-list .c-chk input{margin:0}
+.gm-list .c-star{width:20px;text-align:center;color:#dcdcdc;font-size:16px;line-height:1}
+.gm-list .c-star.on{color:#f2c528}
+.gm-list .c-imp{width:18px;text-align:center;font-size:14px;line-height:1}
+.gm-list .c-imp .a{color:#f2b03c;font-weight:bold}
+.gm-list .c-from{width:165px;color:#222;overflow:hidden;text-overflow:ellipsis;padding-right:8px}
+.gm-list tr.unread .c-from{font-weight:bold}
+.gm-list .c-subj{color:#222;overflow:hidden;text-overflow:ellipsis}
+.gm-list tr.unread .c-subj .sj{font-weight:bold}
+.gm-list .c-subj .lbl{display:inline-block;font-weight:normal;color:#444;background:#dde3ee;border-radius:3px;padding:1px 6px;font-size:11px;margin-right:6px;line-height:14px;vertical-align:middle}
+.gm-list .c-subj .snip{color:#999;font-weight:normal}
+.gm-list .c-date{width:64px;text-align:right;color:#222;padding-right:14px;font-size:12px}
+.gm-list tr.unread .c-date{font-weight:bold}
+/* density: cozy(default) / comfortable / compact */
+.gm.dens-compact .gm-list td{padding:2px 4px}
+.gm.dens-comfortable .gm-list td{padding:9px 4px}
+
+/* ============ OPEN EMAIL VIEW (image 1) ============ */
+.gm-openbar{padding:10px 14px 4px;display:flex;align-items:center}
+.gm-open-subj{font-size:18px;color:#222;font-weight:normal;flex:1;display:flex;align-items:center;gap:8px}
+.gm-open-subj .olbl{font-size:11px;font-weight:normal;border-radius:2px;padding:1px 6px;display:inline-flex;align-items:center;gap:5px;line-height:16px}
+.gm-open-subj .olbl .x{color:#888;font-size:11px;cursor:pointer}
+.gm-open-tools{display:flex;align-items:center;gap:10px;color:#999}
+.gm-open-tools svg{width:16px;height:16px;fill:#888}
+.gm-msg{margin:6px 14px;border:1px solid #ccc;border-radius:2px;padding:14px 16px;position:relative;background:#fff}
+.gm-msg-top{display:flex;align-items:flex-start}
+.gm-msg-ava{width:38px;height:38px;border-radius:2px;background:#cdd;overflow:hidden;margin-right:10px;flex-shrink:0}
+.gm-msg-ava img{width:100%;height:100%;object-fit:cover}
+.gm-msg-meta{flex:1;min-width:0}
+.gm-msg-from{font-weight:bold;color:#222;font-size:13px}
+.gm-msg-to{color:#777;font-size:12px}
+.gm-msg-right{text-align:right;color:#777;font-size:12px;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.gm-msg-right .star{color:#ddd;font-size:16px}
+.gm-msg-right svg{width:15px;height:15px;fill:#999}
+.gm-msg-body{margin-top:14px;font-size:13px;color:#222;line-height:1.45;white-space:pre-wrap;word-wrap:break-word}
+.gm-fwd{color:#500;margin-bottom:6px}
+.gm-quote{color:#222}
+.gm-link{color:#15c;text-decoration:underline;cursor:pointer}
+.gm-fwd .gm-link{color:#15c}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="./index.html">&larr; back to home</a>
+  <h1>2011 Gmail Generator</h1>
+  <p class="sub">Recreate a 2011-era Gmail inbox or open-email screenshot. Pixel-matched to the classic look. Edit the fields, then download a PNG.</p>
+
+  <div class="builder">
+    <div class="row">
+      <div class="field" style="flex:0 0 auto">
+        <label>View</label>
+        <div class="seg" id="viewSeg">
+          <button data-v="inbox" class="on">Inbox list</button>
+          <button data-v="open">Open email</button>
+        </div>
+      </div>
+      <div class="field" style="flex:0 0 auto">
+        <label>Top nav bar (black)</label>
+        <select id="topbar"><option value="yes">Show</option><option value="no">Hide</option></select>
+      </div>
+      <div class="field" style="flex:0 0 auto">
+        <label>Logo color</label>
+        <select id="logocolor"><option value="classic">Classic envelope</option><option value="purple">Purple (2011 look)</option><option value="multi">Multicolor</option></select>
+      </div>
+      <div class="field" style="flex:0 0 auto">
+        <label>Density</label>
+        <select id="density"><option value="cozy">Cozy</option><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select>
+      </div>
+      <div class="field" style="flex:0 0 auto">
+        <label>Show gear menu</label>
+        <select id="gearmenu"><option value="no">No</option><option value="yes">Yes (density popup)</option></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label>Account name (nav)</label><input id="acctName" value="Jaeon"></div>
+      <div class="field"><label>Account email</label><input id="acctEmail" value="hikingfan@gmail.com"></div>
+      <div class="field" style="flex:0 0 auto"><label>Notification count</label><input id="notif" value="7" style="width:70px"></div>
+    </div>
+
+    <!-- INBOX-only controls -->
+    <div id="inboxControls">
+      <div class="hr"></div>
+      <div class="row">
+        <div class="field" style="flex:0 0 auto"><label>Count text</label><input id="countText" value="1–15 of 15"></div>
+        <div class="field"><label>Ad text</label><input id="adText" value="Chromebooks are here - google.com/chromebook - Built for the web - 8 hour battery. Instant resume &amp; 8 second startup."></div>
+      </div>
+      <div class="hint">Email rows &mdash; bold = unread. Drag to reorder is not supported; use the up/down with the list order.</div>
+      <div class="rows-edit" id="rowsEdit"></div>
+      <button class="btn btn-sm" id="addRow">+ Add email row</button>
+    </div>
+
+    <!-- OPEN-only controls -->
+    <div id="openControls" style="display:none">
+      <div class="hr"></div>
+      <div class="row">
+        <div class="field"><label>Subject</label><input id="oSubj" value="In case I got it before you..."></div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:0 0 auto"><label>Label 1 text</label><input id="oL1" value="Bulk" style="width:110px"></div>
+        <div class="field" style="flex:0 0 auto"><label>Label 1 color</label><input type="color" id="oL1c" value="#f4b400" style="padding:2px;height:36px;width:54px"></div>
+        <div class="field" style="flex:0 0 auto"><label>Label 2 text</label><input id="oL2" value="Tips" style="width:110px"></div>
+        <div class="field" style="flex:0 0 auto"><label>Label 2 color</label><input type="color" id="oL2c" value="#dd4b39" style="padding:2px;height:36px;width:54px"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>From name</label><input id="oFrom" value="Matan Arie"></div>
+        <div class="field" style="flex:0 0 auto"><label>To</label><input id="oTo" value="gtips" style="width:120px"></div>
+        <div class="field" style="flex:0 0 auto"><label>Time</label><input id="oTime" value="8:09 PM (3 hours ago)" style="width:170px"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Body (use blank lines for paragraphs)</label>
+          <textarea id="oBody">---------- Forwarded message ----------
+From: The Gmail Team <gmail-team@google.com>
+Date: Tue, Nov 1, 2011 at 18:00
+Subject: [Official Gmail Blog] Gmail's new look
+To: gmail-blog-posts@googlegroups.com
+
+Posted by Jason Cornwell, User Experience Designer
+
+Back in July we showed you a preview of Gmail's new look, and we've been working this summer to make even more updates and improvements. Today, we're giving you an in-depth look at the new design. If you like what you see, over the next few days you'll be able to switch to the new look by clicking on Switch to the new look in the bottom-right of Gmail.
+
+Streamlined conversations
+Conversation view has been completely redesigned to help you read through your email threads. You'll now see profile pictures for your contacts, so it's easier to keep track of who said what. We also stripped out as much as possible so you can focus on communicating with your friends and colleagues.</textarea>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:0 0 auto"><label>Sender avatar</label><input type="file" id="oAva" accept="image/*"></div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="row">
+      <button class="btn btn-go" id="genBtn">Generate / Refresh</button>
+      <button class="btn" id="dlBtn">Download PNG</button>
+    </div>
+  </div>
+
+  <div class="preview-host">
+    <div id="stage"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+const state = {
+  view: 'inbox',
+  oAva: null,
+  rows: [
+    {from:'Phil Sharp', subj:'San Francisco trip', snip:"Hi guys: So for our weekend in San Francisco when I'm thinking about s", labels:[], date:'Oct 10', unread:true, star:false, imp:true},
+    {from:'Peter Harbison', subj:'Halloween Plans', snip:'What are you planning to do for Halloween? We should go to a costume p', labels:[], date:'Oct 10', unread:true, star:false, imp:false},
+    {from:'YouTube', subj:'Your Personal YouTube Digest', snip:'CHANGE EMAIL PREFERENCES - Your YouTube Logo Y...', labels:[], date:'Oct 10', unread:true, star:false, imp:false},
+    {from:'me, Phil, Mandi (5)', subj:'Hike this weekend!', snip:'great idea! I call shotgun on Phils car. On Mon, Oct 10, 2011', labels:[{t:'Hiking',c:'#dde3ee'}], date:'Oct 10', unread:true, star:false, imp:false},
+    {from:'Paul McDonald', subj:'Fun Hike Yesterday!', snip:'Thanks for the great hike yesterday, it was awesome! Lets go o...', labels:[{t:'Hiking',c:'#dde3ee'}], date:'Oct 10', unread:false, star:false, imp:false},
+    {from:'Jeff Wellington', subj:'Chromebook tips?', snip:'Hey Jaeon, you seem like an expert on the best web apps. Wh', labels:[], date:'Oct 10', unread:false, star:false, imp:false},
+    {from:'Peter, me (4)', subj:'How are things going?', snip:'Things are going great. I\'ve got three hikes planned this weekend. On...', labels:[], date:'Oct 10', unread:false, star:false, imp:false},
+    {from:'Simone Davids', subj:'Up for a concert Friday?', snip:"We're getting a big group together to go to this concert and would lo...", labels:[], date:'Oct 10', unread:false, star:false, imp:false},
+    {from:'Phil Sharp', subj:'Just got my chromebook!', snip:"This is the first email I'm sending from my chromebook!", labels:[], date:'Oct 10', unread:false, star:false, imp:false},
+    {from:'Michael Bolognino', subj:'congratulations!', snip:'Hey man. I\'m so pumped to hear about your new team behind! Sounds like ...', labels:[], date:'Oct 10', unread:false, star:false, imp:false},
+    {from:'Meredith Blackwell', subj:'Come celebrate with me!', snip:'Hey Jaeon! I\'m turning 25 a week from today, Since my birthday fal...', labels:[], date:'Oct 10', unread:false, star:false, imp:false},
+    {from:'Phil Sharp', subj:'Assignment #4?', snip:'Did you get the assignment for last Fridays project?', labels:[], date:'Oct 10', unread:false, star:false, imp:false},
+    {from:'Alex, me (2)', subj:'Dinner this weekend :-)', snip:'Already got plans this Friday. How does next weekend sound? On M...', labels:[], date:'Oct 10', unread:false, star:false, imp:false},
+  ]
+};
+
+const sideNavInbox = [
+  {nm:'Inbox', ct:'(5)', cur:true, inbox:true},
+  {nm:'Starred', ct:''},
+  {nm:'Sent Mail', ct:''},
+  {nm:'Drafts', ct:''},
+  {nm:'Hiking', ct:'(2)', sq:'#3d85c6'},
+  {nm:'Home', ct:'', sq:'#6aa84f'},
+  {nm:'To Do', ct:'(2)', sq:'#e69138'},
+  {nm:'Urgent!', ct:'', sq:'#cc0000'},
+  {nm:'More', ct:'▾'}
+];
+const chatList = [
+  {nm:'Jaeon Hiking', me:true, dot:'green', sub:'Set status here'},
+  {nm:'Anelle', dot:'green'},
+  {nm:'Jaeon', dot:'idle'},
+  {nm:'Meredith', dot:'gray'}
+];
+
+/* ---------- builder wiring ---------- */
+function renderRowsEditor(){
+  const host = $('rowsEdit'); host.innerHTML='';
+  state.rows.forEach((r,i)=>{
+    const d=document.createElement('div'); d.className='erow';
+    d.innerHTML=`
+      <div class="field" style="flex:0 0 150px"><label>From</label><input data-k="from" data-i="${i}" value="${esc(r.from)}"></div>
+      <div class="field"><label>Subject</label><input data-k="subj" data-i="${i}" value="${esc(r.subj)}"></div>
+      <div class="field" style="flex:2"><label>Snippet</label><input data-k="snip" data-i="${i}" value="${esc(r.snip)}"></div>
+      <div class="field" style="flex:0 0 90px"><label>Date</label><input data-k="date" data-i="${i}" value="${esc(r.date)}"></div>
+      <div class="field" style="flex:0 0 110px"><label>Label</label><input data-k="lbl" data-i="${i}" value="${esc(r.labels[0]?r.labels[0].t:'')}"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding-top:18px">
+        <label class="chk"><input type="checkbox" data-k="unread" data-i="${i}" ${r.unread?'checked':''}>Unread</label>
+        <label class="chk"><input type="checkbox" data-k="star" data-i="${i}" ${r.star?'checked':''}>Star</label>
+        <label class="chk"><input type="checkbox" data-k="imp" data-i="${i}" ${r.imp?'checked':''}>Important</label>
+      </div>
+      <button class="btn btn-sm" data-del="${i}" style="margin-top:18px">&times;</button>`;
+    host.appendChild(d);
+  });
+  host.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const i=+e.target.dataset.i, k=e.target.dataset.k;
+      if(k==='unread'||k==='star'||k==='imp') state.rows[i][k]=e.target.checked;
+      else if(k==='lbl'){ state.rows[i].labels = e.target.value.trim()? [{t:e.target.value.trim(), c:'#dde3ee'}] : []; }
+      else state.rows[i][k]=e.target.value;
+      render();
+    });
+  });
+  host.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', e=>{ state.rows.splice(+e.target.dataset.del,1); renderRowsEditor(); render(); });
+  });
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+$('addRow').addEventListener('click', ()=>{
+  state.rows.push({from:'New Sender', subj:'Subject', snip:' message snippet here', labels:[], date:'Oct 10', unread:true, star:false, imp:false});
+  renderRowsEditor(); render();
+});
+
+$('viewSeg').addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  const prev = state.view;
+  state.view=e.target.dataset.v;
+  [...$('viewSeg').children].forEach(b=>b.classList.toggle('on', b===e.target));
+  $('inboxControls').style.display = state.view==='inbox'?'':'none';
+  $('openControls').style.display = state.view==='open'?'':'none';
+  // default each view's chrome to match its reference screenshot (only on actual switch)
+  if(state.view!==prev){
+    if(state.view==='open'){ $('topbar').value='no'; $('logocolor').value='multi'; }
+    else { $('topbar').value='yes'; $('logocolor').value='classic'; }
+  }
+  render();
+});
+
+$('oAva').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=ev=>{ state.oAva=ev.target.result; render(); }; r.readAsDataURL(f);
+});
+
+['topbar','logocolor','density','gearmenu','acctName','acctEmail','notif','countText','adText',
+ 'oSubj','oL1','oL1c','oL2','oL2c','oFrom','oTo','oTime','oBody'].forEach(id=>{
+  $(id).addEventListener('input', render);
+  $(id).addEventListener('change', render);
+});
+$('genBtn').addEventListener('click', render);
+
+/* ---------- icons ---------- */
+const I={
+  search:`<svg viewBox="0 0 24 24"><path fill="#fff" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 10-.7.7l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/></svg>`,
+  back:`<svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>`,
+  archive:`<svg viewBox="0 0 24 24"><path d="M20.5 5.2l-1.4-1.7c-.3-.4-.7-.5-1.1-.5H5c-.5 0-.9.1-1.1.5L2.5 5.2C2.2 5.6 2 6 2 6.5V19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6.5c0-.5-.2-.9-.5-1.3zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.1 5l.8-1h12.3l.8 1H5.1z"/></svg>`,
+  spam:`<svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>`,
+  trash:`<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
+  print:`<svg viewBox="0 0 24 24"><path d="M19 8H5c-1.7 0-3 1.3-3 3v6h4v4h12v-4h4v-6c0-1.7-1.3-3-3-3zm-3 11H8v-5h8v5zm3-7c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm-1-9H6v3h12V3z"/></svg>`,
+  expand:`<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`,
+  prev:`<svg viewBox="0 0 24 24"><path d="M15.4 7.4L14 6l-6 6 6 6 1.4-1.4L10.8 12z"/></svg>`,
+  next:`<svg viewBox="0 0 24 24"><path d="M8.6 7.4L10 6l6 6-6 6-1.4-1.4L13.2 12z"/></svg>`,
+  gear:`<svg viewBox="0 0 24 24"><path d="M19.4 13c0-.3.1-.7.1-1s0-.7-.1-1l2.1-1.6c.2-.2.2-.4.1-.6l-2-3.5c-.1-.2-.4-.3-.6-.2l-2.5 1c-.5-.4-1-.7-1.6-1l-.4-2.6c0-.2-.2-.4-.5-.4h-4c-.3 0-.5.2-.5.4L9.6 4.5c-.6.3-1.1.6-1.6 1l-2.5-1c-.2-.1-.5 0-.6.2l-2 3.5c-.1.2-.1.4.1.6L5.1 11c0 .3-.1.7-.1 1s0 .7.1 1l-2.1 1.6c-.2.2-.2.4-.1.6l2 3.5c.1.2.4.3.6.2l2.5-1c.5.4 1 .7 1.6 1l.4 2.6c0 .2.2.4.5.4h4c.3 0 .5-.2.5-.4l.4-2.6c.6-.3 1.1-.6 1.6-1l2.5 1c.2.1.5 0 .6-.2l2-3.5c.1-.2.1-.4-.1-.6L19.4 13zM12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z"/></svg>`,
+  reply:`<svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4c5 0 8.5 1.6 11 5-1-5-4-10-11-11z"/></svg>`,
+  dots:`<svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>`,
+  move:`<svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`,
+  label:`<svg viewBox="0 0 24 24"><path d="M17.6 5.8C17.3 5.3 16.7 5 16 5H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h11c.7 0 1.3-.3 1.6-.8L22 12l-4.4-6.2z"/></svg>`,
+  call:`<svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.3 1l-2.2 2.2z"/></svg>`,
+  video:`<svg viewBox="0 0 24 24"><path d="M15 8c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2v-2.5l4 4v-11l-4 4V8z"/></svg>`
+};
+
+/* ---------- render ---------- */
+function topbarHTML(){
+  if($('topbar').value!=='yes') return '';
+  const name=esc($('acctName').value), notif=esc($('notif').value), av=state.oAva;
+  return `<div class="gm-gbar">
+    <span class="gn">${name}</span>
+    <span class="gn cur">Gmail</span>
+    <span class="gn">Calendar</span>
+    <span class="gn">Documents</span>
+    <span class="gn">Photos</span>
+    <span class="gn">Sites</span>
+    <span class="gn">Web</span>
+    <span class="sp"></span>
+    ${notif?`<span class="notif">${notif}</span>`:''}
+    <span class="gr">Share</span>
+    <span class="ava">${av?`<img src="${av}">`:''}</span>
+  </div>`;
+}
+const CLASSIC_LOGO = `<svg class="gm-classic" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+  <text x="0" y="78" font-family="Arial,Helvetica,sans-serif" font-size="92" font-weight="bold" fill="#4285f4">G</text>
+  <g transform="translate(64,30)">
+    <rect x="0" y="0" width="62" height="46" rx="5" fill="#d93025"/>
+    <path d="M4 4 L31 27 L58 4 Z" fill="#f1f1f1"/>
+    <path d="M4 4 L4 42 L24 24 Z" fill="#fff"/>
+    <path d="M58 4 L58 42 L38 24 Z" fill="#fff"/>
+    <path d="M4 42 L31 19 L58 42 Z" fill="#f5f5f5"/>
+    <path d="M2 4 L31 27 L31 30 L2 7 Z" fill="#d93025"/>
+    <path d="M60 4 L31 27 L31 30 L60 7 Z" fill="#d93025"/>
+  </g>
+  <text x="130" y="78" font-family="Arial,Helvetica,sans-serif" font-size="92" font-weight="bold" fill="#fbbc05">a</text>
+  <text x="194" y="78" font-family="Arial,Helvetica,sans-serif" font-size="92" font-weight="bold" fill="#4285f4">i</text>
+  <text x="224" y="78" font-family="Arial,Helvetica,sans-serif" font-size="92" font-weight="bold" fill="#34a853">l</text>
+  <text x="256" y="28" font-family="Arial" font-size="16" fill="#9aa0a6">TM</text>
+  <text x="150" y="120" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="34" fill="#9aa0a6">by Google</text>
+</svg>`;
+
+function logoHTML(){
+  const v=$('logocolor').value;
+  if(v==='classic') return `<div class="gm-logo classic"><img src="gmail-logo.png" alt="Gmail" crossorigin="anonymous"></div>`;
+  if(v==='purple') return `<div class="gm-logo purple">Gmail</div>`;
+  return `<div class="gm-logo"><span class="b">G</span><span class="r">m</span><span class="y">a</span><span class="b">i</span><span class="g">l</span></div>`;
+}
+function headHTML(extraRight){
+  return `<div class="gm-head">
+    ${logoHTML()}
+    <div class="gm-search"><div class="sbox">
+      <input value="">
+      <button class="sbtn">${I.search}</button>
+    </div></div>
+    ${extraRight||''}
+  </div>`;
+}
+function sideInboxHTML(){
+  const navHTML = sideNavInbox.map(n=>`<li class="${n.cur?'cur ':''}${n.inbox?'inbox':''}"><span class="nm">${n.nm} <span class="ct">${n.ct||''}</span></span>${n.sq?`<span class="sq" style="background:${n.sq}"></span>`:''}</li>`).join('');
+  const chatHTML = chatList.map(c=>{
+    const online = c.dot==='green' || c.dot==='idle';
+    if(c.me){
+      return `<li><span class="dot ${c.dot}"></span><span class="cname me">${c.nm}</span></li>
+      <div class="substatus">${c.sub||'Set status here'}</div>
+      <div class="callphone">${I.call}<span>Call phone</span></div>`;
+    }
+    const icons = `<span class="cicons"><span title="Video call">${I.video}</span><span title="Call phone">${I.call}</span></span>`;
+    return `<li class="${online?'online':''}">
+      <span class="dot ${c.dot}"></span>
+      ${icons}
+      <span class="cname">${c.nm}</span>
+    </li>`;
+  }).join('');
+  return `<div class="gm-side">
+    <div class="gm-compose">COMPOSE</div>
+    <span class="gm-mail-lbl">Mail</span> &#9662;
+    <ul class="gm-nav">${navHTML}</ul>
+    <div class="gm-sec-h">Chat</div>
+    <div class="gm-chat-search"><input placeholder="Search people..."></div>
+    <ul class="gm-chat">${chatHTML}</ul>
+  </div>`;
+}
+
+function inboxView(){
+  const dens = $('density').value;
+  const gearOpen = $('gearmenu').value==='yes';
+  const gearMenu = gearOpen ? `<div class="gm-menu">
+      <div class="mh">Display Density:</div>
+      <div class="mi ${dens==='comfortable'?'sel':''}">Comfortable</div>
+      <div class="mi ${dens==='cozy'?'sel':''}">Cozy</div>
+      <div class="mi ${dens==='compact'?'sel':''}">Compact</div>
+      <div class="sepm"></div>
+      <div class="mi">Settings</div>
+      <div class="mi">Themes</div>
+      <div class="mi">Help</div>
+    </div>` : '';
+
+  const toolbar = `<div class="gm-tb">
+    <div class="grp">
+      <span class="tbtn first cax"><input type="checkbox"><span class="arr">&#9662;</span></span>
+      <span class="tbtn last" style="font-size:17px;line-height:1;color:#888">&#8635;</span>
+    </div>
+    <span class="tbtn first last">More <span class="arr">&#9662;</span></span>
+    <span class="spacer"></span>
+    <span class="count"><b>${$('countText').value}</b></span>
+    <div class="pager">
+      <span class="tbtn first">${I.prev}</span>
+      <span class="tbtn last">${I.next}</span>
+    </div>
+    <span class="gear"><span class="gicon">${I.gear}</span>${gearMenu}</span>
+  </div>`;
+
+  const ad = `<div class="gm-ad"><span class="adt">Ad</span><span>${$('adText').value}</span></div>`;
+
+  const rowsHTML = state.rows.map(r=>{
+    const labels=(r.labels||[]).map(l=>`<span class="lbl" style="background:${l.c}">${esc(l.t)}</span>`).join('');
+    return `<tr class="${r.unread?'unread':'read'}">
+      <td class="c-chk"><input type="checkbox"></td>
+      <td class="c-star ${r.star?'on':''}">${r.star?'★':'☆'}</td>
+      <td class="c-imp">${r.imp?'<span class="a">»</span>':''}</td>
+      <td class="c-from">${esc(r.from)}</td>
+      <td class="c-subj">${labels}<span class="sj">${esc(r.subj)}</span><span class="snip"> - ${esc(r.snip)}</span></td>
+      <td class="c-date">${esc(r.date)}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="gm dens-${dens}">
+    ${topbarHTML()}
+    ${headHTML(`<div class="gm-acct">${esc($('acctEmail').value)}</div>`)}
+    <div class="gm-body">
+      ${sideInboxHTML()}
+      <div class="gm-main">
+        ${toolbar}
+        ${ad}
+        <table class="gm-list">${rowsHTML}</table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openView(){
+  const av=state.oAva;
+  const l1=$('oL1').value, l2=$('oL2').value;
+  const lbls = `${l1?`<span class="olbl" style="background:${$('oL1c').value};color:#fff">${esc(l1)} <span class="x">&#10005;</span></span>`:''}
+                ${l2?`<span class="olbl" style="background:${$('oL2c').value};color:#fff">${esc(l2)} <span class="x">&#10005;</span></span>`:''}`;
+  const body = renderBody($('oBody').value);
+  const sideLite = `<div class="gm-side">
+    <div class="gm-compose">COMPOSE</div>
+    <span class="gm-mail-lbl">Mail</span> &#9662;
+    <ul class="gm-nav">
+      <li>Inbox</li><li>Starred</li>
+      <li class="cur"><span class="nm">Comments <span class="ct">(5)</span></span><span class="sq" style="background:#3d85c6"></span></li>
+      <li><span class="nm">Tips</span><span class="sq" style="background:#cc0000"></span></li>
+      <li>More &#9662;</li>
+    </ul>
+    <div class="gm-sec-h" style="border:none;color:#444;font-weight:bold">Google Docs <span style="float:right;color:#999">&#9662;</span></div>
+    <div class="gm-sec-h" style="border:none;color:#444;font-weight:bold">Invite a friend <span style="float:right;color:#999">&#9662;</span></div>
+    <div style="font-size:11px;color:#444;padding:2px 4px">Give Gmail to:<br><input style="width:90%;margin-top:3px;border:1px solid #ccc;padding:2px"><br><button style="margin-top:4px;font-size:11px">Send Invite</button> <span style="color:#999;font-size:11px">50 left</span></div>
+  </div>`;
+
+  const toolbar = `<div class="gm-tb">
+    <span class="tbtn first">${I.back}</span>
+    <span class="tbtn">${I.archive}</span>
+    <span class="tbtn">${I.spam}</span>
+    <span class="tbtn last">${I.trash}</span>
+    <span style="width:8px"></span>
+    <span class="tbtn first">${I.move} Move to Inbox</span>
+    <span class="tbtn">${I.label}</span>
+    <span class="tbtn last">More <span style="font-size:9px">&#9662;</span></span>
+    <span class="spacer"></span>
+    <span class="tbtn first">${I.print}</span>
+    <span class="tbtn last">${I.expand}</span>
+    <div class="pager" style="margin-left:10px"><span class="tbtn first">${I.prev}</span><span class="tbtn last">${I.next}</span></div>
+    <span class="gear">${I.gear}</span>
+  </div>`;
+
+  return `<div class="gm">
+    ${topbarHTML()}
+    ${headHTML('')}
+    <div class="gm-body">
+      ${sideLite}
+      <div class="gm-main">
+        ${toolbar}
+        <div class="gm-openbar">
+          <div class="gm-open-subj">${esc($('oSubj').value)} ${lbls}</div>
+        </div>
+        <div class="gm-msg">
+          <div class="gm-msg-top">
+            <div class="gm-msg-ava">${av?`<img src="${av}">`:''}</div>
+            <div class="gm-msg-meta">
+              <span class="gm-msg-from">${esc($('oFrom').value)}</span>
+              <span class="gm-msg-to">to ${esc($('oTo').value)}</span>
+            </div>
+            <div class="gm-msg-right">
+              <span>${esc($('oTime').value)}</span>
+              <span class="star">&#9734;</span>
+              ${I.reply}
+              ${I.dots}
+            </div>
+          </div>
+          <div class="gm-msg-body">${body}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function linkify(safe){
+  // safe = already html-escaped text. Turn emails + urls into blue links.
+  safe = safe.replace(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/g, '<a class="gm-link" href="#">$1</a>');
+  safe = safe.replace(/\b((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9\-]+\.(?:com|org|net|io)(?:\/[^\s<]*)?)\b/g, m=> m.includes('@') ? m : `<a class="gm-link" href="#">${m}</a>`);
+  // a few well-known phrases shown as links in the original blog email
+  ['preview','Switch to the new look','Gmail'].forEach(ph=>{
+    safe = safe.replace(new RegExp('(?<!>)\\b'+ph.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g'), `<a class="gm-link" href="#">${ph}</a>`);
+  });
+  return safe;
+}
+function renderBody(t){
+  // header block (---- / From:/Date:/Subject:/To:) rendered dark-red; rest linkified
+  return esc(t).split(/\n/).map(line=>{
+    const isHeader = /^-{3,}.*-{3,}$/.test(line.trim()) || /^(From|Date|Subject|To):/.test(line.trim());
+    if(isHeader) return `<span class="gm-fwd">${linkify(line)}</span>`;
+    return linkify(line);
+  }).join('\n');
+}
+
+function render(){
+  $('stage').innerHTML = state.view==='inbox' ? inboxView() : openView();
+}
+
+$('dlBtn').addEventListener('click', ()=>{
+  const node=$('stage').firstElementChild;
+  if(!node) return;
+  html2canvas(node,{backgroundColor:'#fff',scale:2,useCORS:true}).then(c=>{
+    const a=document.createElement('a');
+    a.download = state.view==='inbox' ? 'gmail-inbox-2011.png' : 'gmail-email-2011.png';
+    a.href=c.toDataURL('image/png'); a.click();
+  });
+});
+
+renderRowsEditor();
+render();
+</script>
+</body>
+</html>
