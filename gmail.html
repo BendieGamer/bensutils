@@ -278,6 +278,18 @@ Conversation view has been completely redesigned to help you read through your e
       <button class="btn btn-go" id="genBtn">Generate / Refresh</button>
       <button class="btn" id="dlBtn">Download PNG</button>
     </div>
+    <div class="row" style="margin-top:4px">
+      <input type="text" id="saveName" placeholder="Save name" style="flex:1;min-width:160px">
+      <button class="btn" id="saveBtn">Save</button>
+      <select id="saveList" style="min-width:170px"><option value="">Load saved layout</option></select>
+      <button class="btn" id="loadBtn">Load</button>
+      <button class="btn" id="delBtn">Delete</button>
+      <span style="width:10px"></span>
+      <button class="btn btn-sm" id="exportBtn" title="Download the selected save as a .json file">Export file</button>
+      <button class="btn btn-sm" id="importBtn" title="Import a .json save file">Import file</button>
+      <input type="file" id="importInput" accept=".json,application/json" style="display:none">
+    </div>
+    <div id="saveMsg" class="hint" style="margin-top:6px"></div>
   </div>
 
   <div class="preview-host">
@@ -343,7 +355,11 @@ function renderRowsEditor(){
         <label class="chk"><input type="checkbox" data-k="star" data-i="${i}" ${r.star?'checked':''}>Star</label>
         <label class="chk"><input type="checkbox" data-k="imp" data-i="${i}" ${r.imp?'checked':''}>Important</label>
       </div>
-      <button class="btn btn-sm" data-del="${i}" style="margin-top:18px">&times;</button>`;
+      <div style="display:flex;flex-direction:column;gap:3px;padding-top:18px">
+        <button class="btn btn-sm" data-up="${i}" title="Move up" ${i===0?'disabled':''}>&uarr;</button>
+        <button class="btn btn-sm" data-down="${i}" title="Move down" ${i===state.rows.length-1?'disabled':''}>&darr;</button>
+        <button class="btn btn-sm" data-del="${i}" title="Remove">&times;</button>
+      </div>`;
     host.appendChild(d);
   });
   host.querySelectorAll('input').forEach(inp=>{
@@ -352,18 +368,30 @@ function renderRowsEditor(){
       if(k==='unread'||k==='star'||k==='imp') state.rows[i][k]=e.target.checked;
       else if(k==='lbl'){ state.rows[i].labels = e.target.value.trim()? [{t:e.target.value.trim(), c:'#dde3ee'}] : []; }
       else state.rows[i][k]=e.target.value;
-      render();
+      render(); autosave();
     });
   });
   host.querySelectorAll('[data-del]').forEach(b=>{
-    b.addEventListener('click', e=>{ state.rows.splice(+e.target.dataset.del,1); renderRowsEditor(); render(); });
+    b.addEventListener('click', e=>{ state.rows.splice(+e.currentTarget.dataset.del,1); renderRowsEditor(); render(); autosave(); });
   });
+  host.querySelectorAll('[data-up]').forEach(b=>{
+    b.addEventListener('click', e=>{ moveRow(+e.currentTarget.dataset.up, -1); });
+  });
+  host.querySelectorAll('[data-down]').forEach(b=>{
+    b.addEventListener('click', e=>{ moveRow(+e.currentTarget.dataset.down, 1); });
+  });
+}
+function moveRow(i, dir){
+  const j=i+dir;
+  if(j<0||j>=state.rows.length) return;
+  [state.rows[i], state.rows[j]] = [state.rows[j], state.rows[i]];
+  renderRowsEditor(); render(); autosave();
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 $('addRow').addEventListener('click', ()=>{
   state.rows.push({from:'New Sender', subj:'Subject', snip:' message snippet here', labels:[], date:'Oct 10', unread:true, star:false, imp:false});
-  renderRowsEditor(); render();
+  renderRowsEditor(); render(); autosave();
 });
 
 $('viewSeg').addEventListener('click', e=>{
@@ -378,20 +406,123 @@ $('viewSeg').addEventListener('click', e=>{
     if(state.view==='open'){ $('topbar').value='no'; $('logocolor').value='multi'; }
     else { $('topbar').value='yes'; $('logocolor').value='classic'; }
   }
-  render();
+  render(); autosave();
 });
 
 $('oAva').addEventListener('change', e=>{
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=ev=>{ state.oAva=ev.target.result; render(); }; r.readAsDataURL(f);
+  const r=new FileReader(); r.onload=ev=>{ state.oAva=ev.target.result; render(); autosave(); }; r.readAsDataURL(f);
 });
 
-['topbar','logocolor','density','gearmenu','acctName','acctEmail','notif','countText','adText',
- 'oSubj','oL1','oL1c','oL2','oL2c','oFrom','oTo','oTime','oBody'].forEach(id=>{
-  $(id).addEventListener('input', render);
-  $(id).addEventListener('change', render);
+const FIELD_IDS = ['topbar','logocolor','density','gearmenu','acctName','acctEmail','notif','countText','adText',
+ 'oSubj','oL1','oL1c','oL2','oL2c','oFrom','oTo','oTime','oBody'];
+FIELD_IDS.forEach(id=>{
+  $(id).addEventListener('input', ()=>{ render(); autosave(); });
+  $(id).addEventListener('change', ()=>{ render(); autosave(); });
 });
 $('genBtn').addEventListener('click', render);
+
+/* ---------- save / load (named saves, like forums) ---------- */
+const STORAGE_KEY = 'bensutils_gmail_saves';   // map of {name: state}
+const SESSION_KEY = 'bensutils_gmail_session'; // last auto-saved session
+
+function collectState(){
+  const fields={};
+  FIELD_IDS.forEach(id=>fields[id]=$(id).value);
+  return { v:1, view:state.view, fields, rows:state.rows, oAva:state.oAva };
+}
+function applyState(data){
+  if(!data || typeof data!=='object') return false;
+  if(data.fields) FIELD_IDS.forEach(id=>{ if(data.fields[id]!=null) $(id).value=data.fields[id]; });
+  if(Array.isArray(data.rows)) state.rows = data.rows;
+  state.oAva = data.oAva || null;
+  if(data.view){
+    state.view = data.view;
+    [...$('viewSeg').children].forEach(b=>b.classList.toggle('on', b.dataset.v===data.view));
+    $('inboxControls').style.display = state.view==='inbox'?'':'none';
+    $('openControls').style.display = state.view==='open'?'':'none';
+  }
+  renderRowsEditor(); render();
+  return true;
+}
+
+function getSaves(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY))||{}; }catch(e){ return {}; } }
+function persistSaves(s){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }catch(e){ alert('Could not save (storage full?).'); } }
+function autosave(){ try{ localStorage.setItem(SESSION_KEY, JSON.stringify(collectState())); }catch(e){} }
+
+function updateSaveList(selected){
+  const list=$('saveList');
+  const saves=getSaves();
+  list.innerHTML='<option value="">Load saved layout</option>';
+  Object.keys(saves).sort().forEach(name=>{
+    const o=document.createElement('option'); o.value=name; o.textContent=name; list.appendChild(o);
+  });
+  if(selected && saves[selected]) list.value=selected;
+}
+function flashSave(text, ok=true){
+  const el=$('saveMsg'); el.textContent=text; el.style.color = ok?'#7dd87d':'#e57373';
+  clearTimeout(flashSave._t); flashSave._t=setTimeout(()=>{ el.textContent=''; }, 3000);
+}
+
+$('saveBtn').addEventListener('click', ()=>{
+  const name=$('saveName').value.trim();
+  if(!name){ flashSave('Enter a save name before saving.', false); return; }
+  const saves=getSaves();
+  saves[name]=collectState();
+  persistSaves(saves);
+  updateSaveList(name);
+  autosave();
+  flashSave(`Saved layout “${name}”.`);
+});
+$('loadBtn').addEventListener('click', ()=>{
+  const name=$('saveList').value;
+  if(!name){ flashSave('Select a saved layout to load.', false); return; }
+  const data=getSaves()[name];
+  if(!data){ flashSave('Saved layout not found.', false); return; }
+  applyState(data); autosave();
+  $('saveName').value=name;
+  flashSave(`Loaded layout “${name}”.`);
+});
+$('delBtn').addEventListener('click', ()=>{
+  const name=$('saveList').value;
+  if(!name){ flashSave('Select a saved layout to delete.', false); return; }
+  const saves=getSaves();
+  if(!saves[name]){ flashSave('Saved layout not found.', false); return; }
+  if(!confirm(`Delete saved layout “${name}”?`)) return;
+  delete saves[name];
+  persistSaves(saves);
+  updateSaveList();
+  flashSave(`Deleted layout “${name}”.`);
+});
+
+// export / import a single save to/from a .json file
+$('exportBtn').addEventListener('click', ()=>{
+  const name=$('saveList').value;
+  const data = name ? getSaves()[name] : collectState();
+  const fn = (name||'gmail-2011-layout').replace(/[^\w\-]+/g,'_');
+  const blob=new Blob([JSON.stringify({name:name||'', state:data},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fn+'.json'; a.click();
+  URL.revokeObjectURL(a.href);
+  flashSave(name?`Exported “${name}”.`:'Exported current layout.');
+});
+$('importBtn').addEventListener('click', ()=> $('importInput').click());
+$('importInput').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const obj=JSON.parse(ev.target.result);
+      const st = obj.state || obj;            // accept both wrapped + raw state
+      const name = (obj.name||'').trim() || (f.name.replace(/\.json$/i,''));
+      const saves=getSaves(); saves[name]=st; persistSaves(saves);
+      updateSaveList(name);
+      applyState(st); autosave();
+      $('saveName').value=name;
+      flashSave(`Imported “${name}”.`);
+    }catch(err){ flashSave('Could not import: invalid file.', false); }
+  };
+  r.readAsText(f); e.target.value='';
+});
 
 /* ---------- icons ---------- */
 const I={
@@ -648,8 +779,16 @@ $('dlBtn').addEventListener('click', ()=>{
   });
 });
 
-renderRowsEditor();
-render();
+// populate named-saves dropdown, then restore last session if present
+updateSaveList();
+(function restore(){
+  try{
+    const saved = localStorage.getItem(SESSION_KEY);
+    if(saved && applyState(JSON.parse(saved))) return;
+  }catch(e){}
+  renderRowsEditor();
+  render();
+})();
 </script>
 </body>
 </html>
