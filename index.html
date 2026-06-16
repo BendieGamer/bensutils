@@ -198,6 +198,12 @@
             convert unions to old format <span class="experimental-tag">[experimental]</span>
           </label>
         </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="toggle-convert-wedges" checked>
+            convert WedgeParts into Part + shape property (retro wedges) <span class="experimental-tag">[xml only]</span>
+          </label>
+        </div>
 
         <hr>
 
@@ -462,6 +468,7 @@
       voxelVersionContainer: document.getElementById('voxel-version-container'),
       voxelVersionSelect: document.getElementById('voxel-version-select'),
       toggleFixUnions: document.getElementById('toggle-fix-unions'),
+      toggleConvertWedges: document.getElementById('toggle-convert-wedges'),
       currentFile: null,
       currentFiles: [],
 
@@ -584,6 +591,38 @@
         return mappings;
       },
 
+      // converts modern WedgeParts into a legacy Part with shape = Wedge (PartType
+      // value 3), the way old roblox represented wedges. retags the <Item> class and
+      // injects (or overwrites) a <token name="shape">3</token> in its Properties.
+      // operates on raw xml text. returns { text, count }.
+      convertWedgesToXml(text) {
+        let count = 0;
+
+        // match a whole <Item class="WedgePart" ...> ... </Item> block. wedgeparts
+        // never contain nested <Item> children with class "WedgePart" inside their
+        // own properties, so a non-greedy match to the next </Item> is safe here.
+        const itemRe = /<Item class="WedgePart"([^>]*)>([\s\S]*?)<\/Item>/g;
+
+        text = text.replace(itemRe, (whole, attrs, body) => {
+          count++;
+
+          // overwrite an existing shape token, or inject one into <Properties>.
+          const shapeRe = /<token name="shape">\s*\d+\s*<\/token>/;
+          if (shapeRe.test(body)) {
+            body = body.replace(shapeRe, '<token name="shape">3</token>');
+          } else {
+            body = body.replace(
+              /(<Properties>)/,
+              '$1\n\t\t\t<token name="shape">3</token>'
+            );
+          }
+
+          return `<Item class="Part"${attrs}>${body}</Item>`;
+        });
+
+        return { text, count };
+      },
+
       setFile(files) {
         if (files && files.length > 0) {
           this.currentFiles = Array.from(files);
@@ -683,7 +722,8 @@
             }
 
             const isXml = file.name.toLowerCase().endsWith('.rbxlx');
-            const out = fix_place(
+            const convertWedges = this.toggleConvertWedges.checked;
+            let out = fix_place(
               bytes,
               isXml,
               forceXml,
@@ -701,6 +741,19 @@
             );
 
             const shouldOutputXml = (isXml && !forceBinary) || forceXml;
+
+            if (convertWedges) {
+              if (shouldOutputXml) {
+                let text = new TextDecoder('utf-8').decode(out);
+                const result = this.convertWedgesToXml(text);
+                text = result.text;
+                console.log(`converted wedges: ${result.count} WedgePart(s) -> Part (shape=Wedge) in ${file.name}`);
+                out = new TextEncoder().encode(text);
+              } else {
+                console.warn(`skipped wedge conversion for ${file.name}: only works on xml output. enable "force xml output" to use this.`);
+              }
+            }
+
             const outname = shouldOutputXml
               ? file.name.replace(/\.rbxlx?$/i, '_fixed.rbxlx')
               : file.name.replace(/\.rbxlx?$/i, '_fixed.rbxl');
