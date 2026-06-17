@@ -40,7 +40,8 @@ input[type=file]{display:none}
 .frow-tr:last-child{border-bottom:none}
 .fleft{width:118px;min-width:118px;vertical-align:top;background:#d0d8ec;border-right:1px solid #8a9ab8;padding:8px 7px}
 .fright{vertical-align:top;background:#e8ecf5;padding:10px 12px}
-.s-uname{display:inline-block;color:#0000cc;font-weight:bold;font-size:11px;margin:0;cursor:pointer;text-decoration:none;vertical-align:middle}
+.s-uname-row{display:flex;align-items:baseline;gap:2px}
+.s-uname{color:#0000cc;font-weight:bold;font-size:11px;margin:0;cursor:pointer;text-decoration:none;word-break:break-word;overflow-wrap:anywhere;min-width:0}
 .s-uname:hover{text-decoration:underline}
 .s-avatar{width:70px;height:80px;border:1px solid #8a9ab8;background:#b8c4d8;overflow:hidden;margin:4px 0 0 0}
 .s-avatar img{width:100%;height:100%;object-fit:cover;display:block}
@@ -53,7 +54,7 @@ input[type=file]{display:none}
 .s-info br{display:block;margin:2px 0}
 .s-grp{font-size:10px;color:#0000cc;cursor:pointer}
 .s-grp:hover{text-decoration:underline}
-.online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#cc0000;margin-right:2px;vertical-align:middle}
+.online-dot{flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:#cc0000;margin-right:2px;position:relative;top:1px}
 .ph-title{font-size:12px;font-weight:bold;color:#000;display:block;margin-bottom:2px}
 .ph-date{font-size:10px;color:#555;display:block;margin-bottom:4px}
 .ph-div{height:1px;background:#b8c2d8;margin:4px 0 8px}
@@ -210,7 +211,7 @@ function generate(){
     const tr=document.createElement('tr');
     tr.className='frow-tr';
     tr.innerHTML=`<td class="fleft">
-  <span class="online-dot"></span><span class="s-uname">${un}</span>
+  <div class="s-uname-row"><span class="online-dot"></span><span class="s-uname">${un}</span></div>
   <div class="s-avatar">${avHTML}</div>
   ${getModHTML(isMod)}${getBadgeHTML(badge)}
   <div class="s-info">Joined: ${jd}<br>Total Posts: ${tp}${grp?`<br><span class="s-grp">+ ${grp}</span>`:''}</div>
@@ -359,13 +360,18 @@ async function downloadThreadImage(){
   msg.style.color='#004400';
   msg.textContent='Rendering image…';
   try{
+    // Capture the thread at the width it actually occupies on screen so the
+    // fixed-layout table isn't stretched to the full viewport during render.
+    const rect = node.getBoundingClientRect();
     const canvas = await html2canvas(node, {
       backgroundColor:'#ffffff',
       scale: Math.min(window.devicePixelRatio || 1, 2),
       useCORS:true,
       logging:false,
-      windowWidth: node.scrollWidth,
-      windowHeight: node.scrollHeight
+      width: Math.ceil(rect.width),
+      height: Math.ceil(rect.height),
+      scrollX: 0,
+      scrollY: 0
     });
     const ttl = (document.getElementById('ttl').value || 'thread')
       .replace(/[^a-z0-9_-]+/gi,'_').slice(0,40) || 'thread';
