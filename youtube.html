@@ -1,0 +1,551 @@
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body,td,input,textarea,select,button{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#000}
+.page{background:#c0c9d9;padding:8px}
+/* ───── generator control panel (matches forum gen styling) ───── */
+.gbox{background:#e8ecf5;border:1px solid #9aaac0;margin-bottom:8px}
+.ghead{background:#cc181e;color:#fff;font-weight:bold;padding:3px 8px;font-size:11px;font-family:Verdana,sans-serif}
+.gbody{padding:8px}
+.trow{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.trow label{font-size:10px;font-weight:bold;color:#222;min-width:120px;font-family:Verdana,sans-serif}
+.trow input,.trow select{font-family:Verdana;font-size:11px;border:1px solid #999;padding:2px 4px;background:#fff;flex:1}
+.fr{display:flex;align-items:flex-start;gap:5px;margin-bottom:5px}
+.fr label{font-size:10px;font-weight:bold;color:#333;min-width:120px;padding-top:3px;flex-shrink:0;font-family:Verdana,sans-serif}
+.fr input,.fr textarea,.fr select{font-family:Verdana;font-size:11px;border:1px solid #aaa;padding:2px 4px;background:#fff;flex:1}
+.fr textarea{height:46px;resize:vertical}
+.av-drop{width:160px;height:90px;border:2px dashed #8a9ab8;background:#d4dae8;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.av-drop img.av-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}
+.av-drop-txt{font-size:9px;color:#556;text-align:center;line-height:1.4;padding:4px;position:relative;z-index:1}
+.av-drop.has-img .av-drop-txt{display:none}
+input[type=file]{display:none}
+.pf{background:#f2f5fc;border:1px solid #b0bcd4;padding:7px 8px;margin-bottom:5px}
+.pf-hd{font-size:10px;font-weight:bold;color:#cc181e;margin-bottom:5px;font-family:Verdana,sans-serif}
+.btn{font-family:Verdana;font-size:11px;font-weight:bold;border:1px solid #7a8aaa;padding:3px 11px;cursor:pointer;background:#dce4f4}
+.btn:hover{background:#c4ceea}
+.btn-go{background:#cc181e;color:#fff;border-color:#a01016}
+.btn-go:hover{background:#b01016}
+.btn-sm{font-size:10px;padding:2px 7px}
+
+/* ───── rendered old-YouTube page (2012) ───── */
+.yt{width:1057px;background:#fff;border:1px solid #ccc;font-family:Arial,sans-serif;color:#333}
+.yt-top{border-bottom:1px solid #ccc;padding:10px 16px;display:flex;align-items:center;gap:18px}
+.yt-logo{display:flex;align-items:baseline;font-weight:bold;font-size:0}
+.yt-logo .yt-you{font-size:26px;color:#333;font-weight:bold;letter-spacing:-1px;font-family:Arial}
+.yt-logo .yt-tube{font-size:19px;color:#fff;background:#cc181e;padding:1px 6px;border-radius:5px;font-weight:bold;margin-left:1px;position:relative;top:-2px}
+.yt-search{flex:1;display:flex;max-width:530px}
+.yt-search input{flex:1;border:1px solid #ccc;border-right:none;padding:5px 7px;font-size:13px;height:30px}
+.yt-search button{background:#f8f8f8;border:1px solid #ccc;padding:0 16px;font-size:12px;cursor:pointer;color:#333;background-image:linear-gradient(#fff,#e8e8e8)}
+.yt-nav{display:flex;gap:18px;font-size:12px;font-weight:bold}
+.yt-nav a{color:#167ac6;text-decoration:none}
+.yt-account{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#167ac6;font-weight:bold}
+.yt-account .arrow{color:#888;font-size:9px;font-weight:normal}
+
+.yt-body{display:flex;padding:14px 16px}
+.yt-main{width:660px;flex-shrink:0}
+.yt-title{font-size:19px;font-weight:bold;color:#222;margin-bottom:7px;font-family:Arial}
+.yt-channel{margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.yt-channel a{color:#167ac6;text-decoration:none;font-weight:bold;font-size:13px}
+.yt-sub{background-image:linear-gradient(#fcfcfc,#e3e3e3);border:1px solid #ccc;padding:3px 8px;font-size:11px;color:#333;font-weight:bold;border-radius:2px}
+
+.yt-player{position:relative;width:640px;height:390px;background:#000;overflow:hidden}
+.yt-player img.yt-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.yt-player .yt-frame-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#888;font-size:13px;text-align:center;z-index:1}
+.yt-info-icon{position:absolute;top:8px;left:8px;width:22px;height:22px;background:rgba(40,40,40,.85);border:1px solid #555;border-radius:2px;z-index:3;display:flex;align-items:center;justify-content:center}
+.yt-info-icon::before{content:'i';color:#bbb;font-family:Georgia,serif;font-style:italic;font-size:13px;font-weight:bold}
+.yt-vevo{position:absolute;top:14px;right:16px;color:#fff;font-weight:bold;font-style:italic;font-size:20px;opacity:.9;z-index:3;font-family:Arial}
+.yt-cc{position:absolute;left:0;right:0;bottom:50px;text-align:center;color:#fff;font-size:17px;z-index:3;text-shadow:1px 1px 2px #000;font-family:Arial}
+.yt-controls{position:absolute;left:0;right:0;bottom:0;height:30px;background:rgba(0,0,0,.78);z-index:4;display:flex;align-items:center;padding:0 8px;gap:10px}
+.yt-ctrl-play{color:#fff;font-size:12px}
+.yt-ctrl-vol{color:#fff;font-size:13px}
+.yt-progress{position:absolute;left:0;right:0;bottom:30px;height:5px;background:#666;z-index:4}
+.yt-progress .yt-buffer{position:absolute;left:0;top:0;bottom:0;background:#999}
+.yt-progress .yt-played{position:absolute;left:0;top:0;bottom:0;background:#cc181e}
+.yt-progress .yt-scrub{position:absolute;top:-4px;width:13px;height:13px;border-radius:50%;background:#fff;border:1px solid #999;margin-left:-6px}
+.yt-time{color:#ddd;font-size:11px}
+.yt-rightctrl{margin-left:auto;display:flex;align-items:center;gap:9px;color:#ddd;font-size:11px}
+.yt-cc-btn{color:#cc181e;font-weight:bold;border:1px solid #cc181e;border-radius:2px;padding:0 3px;font-size:9px}
+.yt-hd{border:1px solid #aaa;border-radius:2px;padding:0 3px;font-size:9px;color:#ddd}
+
+.yt-actions{display:flex;align-items:flex-start;margin-top:7px;border-bottom:1px solid #ddd;padding-bottom:9px}
+.yt-act-left{display:flex;gap:5px;align-items:center}
+.yt-act{background-image:linear-gradient(#fcfcfc,#e3e3e3);border:1px solid #ccc;border-radius:2px;padding:4px 9px;font-size:11px;color:#333;display:inline-flex;align-items:center;gap:4px}
+.yt-iconbtn{background-image:linear-gradient(#fcfcfc,#e3e3e3);border:1px solid #ccc;border-radius:2px;padding:4px 7px;font-size:11px;color:#555;display:inline-flex;align-items:center}
+.yt-svg{vertical-align:middle;display:inline-block}
+.yt-act .yt-svg{margin-right:1px}
+.yt-views{margin-left:auto;text-align:right}
+.yt-viewrow{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.yt-viewcount{font-size:28px;color:#666;font-weight:normal;font-family:Arial;line-height:1}
+.yt-graph{width:16px;height:14px;border:1px solid #bbb;border-radius:1px;position:relative;flex-shrink:0}
+.yt-graph::before{content:'';position:absolute;left:2px;bottom:2px;width:2px;height:5px;background:#aaa;box-shadow:4px -2px 0 #aaa,8px -5px 0 #aaa}
+.yt-likebar{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:5px;font-size:11px;color:#999}
+.yt-likebar .bar{width:160px;height:3px;background:#cc181e;position:relative;display:flex}
+.yt-likebar .bar .up{height:100%;background:#3a8a2a}
+
+.yt-uploadinfo{font-size:12px;color:#333;padding:11px 0;border-bottom:1px solid #eee}
+.yt-uploadinfo a{color:#167ac6;text-decoration:none}
+.yt-desc{font-size:12px;color:#333;padding:11px 0;line-height:1.5;white-space:pre-wrap}
+.yt-desc a{color:#167ac6;text-decoration:none}
+.yt-listening{display:flex;align-items:flex-start;gap:8px;padding:8px 0;font-size:11px;color:#555}
+.yt-listening .lt-label{color:#888;margin-bottom:4px}
+.yt-listening .lt-art{width:50px;height:50px;background:#222;flex-shrink:0;overflow:hidden}
+.yt-listening .lt-art img{width:100%;height:100%;object-fit:cover}
+.yt-listening .lt-meta{line-height:1.5}
+.yt-listening .lt-song{color:#888}
+.yt-listening .lt-title{color:#333}
+.yt-listening .lt-nav{margin-left:auto;display:flex;gap:2px;align-self:flex-start;margin-top:14px}
+.yt-listening .lt-nav span{border:1px solid #ccc;background:linear-gradient(#fcfcfc,#e8e8e8);width:16px;height:15px;display:flex;align-items:center;justify-content:center;color:#888;font-size:9px}
+.yt-showmore{text-align:center;color:#888;font-size:11px;padding:9px 0;border-top:1px solid #eee}
+
+/* sidebar */
+.yt-side{flex:1;padding-left:20px;min-width:0}
+.yt-side-hd{display:flex;align-items:center;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:9px}
+.yt-side-hd .up-next{font-size:14px;color:#333}
+.yt-side-hd .autoplay{margin-left:auto;font-size:11px;color:#888;display:flex;align-items:center;gap:6px}
+.yt-toggle{width:30px;height:14px;background:#ccc;border-radius:7px;position:relative}
+.yt-toggle::after{content:'';position:absolute;left:1px;top:1px;width:12px;height:12px;border-radius:50%;background:#fff}
+.yt-rel{display:flex;gap:8px;margin-bottom:8px}
+.yt-rel-thumb{width:120px;height:68px;background:#000;flex-shrink:0;position:relative;overflow:hidden}
+.yt-rel-thumb img{width:100%;height:100%;object-fit:cover}
+.yt-rel-thumb .rel-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#777;font-size:9px;background:#222}
+.yt-rel-thumb .rel-dur{position:absolute;right:2px;bottom:2px;background:rgba(0,0,0,.8);color:#fff;font-size:10px;padding:0 3px}
+.yt-rel-info{min-width:0;padding-top:1px}
+.yt-rel-title{color:#167ac6;font-size:12px;font-weight:bold;line-height:1.25;display:block;margin-bottom:3px}
+.yt-rel-by{color:#888;font-size:11px;line-height:1.4}
+.yt-rel-meta{color:#888;font-size:11px}
+.yt-rel-featured{display:inline-block;background:#999;color:#fff;font-size:8px;font-weight:bold;padding:1px 4px;margin-left:5px;vertical-align:middle;letter-spacing:.5px}
+/* channel-style sidebar item (Subscribe + sub count) */
+.yt-rel-sub{display:flex;align-items:center;gap:6px;margin-top:5px}
+.yt-rel-sub .sub-btn{background-image:linear-gradient(#fcfcfc,#e3e3e3);border:1px solid #ccc;border-radius:2px;padding:3px 9px;font-size:11px;color:#333;font-weight:bold}
+.yt-rel-sub .sub-count{border:1px solid #ccc;background:#f4f4f4;padding:3px 7px;font-size:11px;color:#555}
+</style>
+
+<div class="page">
+<div class="gbox">
+  <div class="ghead">Old YouTube Generator — 2012<span style="float:right;font-weight:normal;opacity:.8">v1.0</span></div>
+  <div class="gbody">
+    <div class="trow"><label>Video title</label><input id="ttl" value="Kendrick Lamar - Swimming Pools (Drank)"></div>
+    <div class="trow"><label>Channel name</label><input id="chan" value="KendrickLamarVEVO"></div>
+    <div class="trow"><label>View count</label><input id="views" value="215,375,873"></div>
+    <div class="trow"><label>Likes</label><input id="likes" value="2,016,426"></div>
+    <div class="trow"><label>Dislikes</label><input id="dislikes" value="38,953"></div>
+    <div class="trow"><label>Current time</label><input id="curtime" value="0:36"></div>
+    <div class="trow"><label>Total time</label><input id="tottime" value="3:51"></div>
+    <div class="trow"><label>Caption (subtitle)</label><input id="caption" value="&#9834; Faded, drank, faded, drank &#9834;"></div>
+    <div class="trow"><label>Uploaded by</label><input id="uploader" value="KendrickLamarVEVO"></div>
+    <div class="trow"><label>Upload date</label><input id="udate" value="Aug 3, 2013"></div>
+    <div class="trow"><label>VEVO watermark</label><input type="checkbox" id="vevo" checked style="flex:none"></div>
+    <div class="trow"><label>HD badge</label><input type="checkbox" id="hd" checked style="flex:none"></div>
+    <div class="trow"><label>Account name</label><input id="acct" value="thxdeeply"></div>
+    <div class="fr"><label>Description</label><textarea id="desc">Music video by Kendrick Lamar performing Swimming Pools (Drank). (C) 2012 Aftermath/Interscope Records</textarea></div>
+    <div class="trow"><label>"Listening to" widget</label><input type="checkbox" id="ltshow" checked style="flex:none"></div>
+    <div class="trow"><label>— Song title</label><input id="ltsong" value="Swimming Pools (Drank)"></div>
+    <div class="pf">
+      <div class="pf-hd">"Listening to" album art (optional)</div>
+      <div class="av-drop" style="width:70px;height:70px" id="avd-lt" onclick="document.getElementById('fi-lt').click()">
+        <div class="av-drop-txt">album<br>art</div>
+      </div>
+      <input type="file" id="fi-lt" accept="image/*" onchange="loadLtImg(this)">
+    </div>
+
+    <div class="pf">
+      <div class="pf-hd">Video thumbnail / player frame</div>
+      <div class="av-drop" id="avd-main" onclick="document.getElementById('fi-main').click()">
+        <div class="av-drop-txt">Click to upload<br>the video frame /<br>screenshot</div>
+      </div>
+      <input type="file" id="fi-main" accept="image/*" onchange="loadMainImg(this)">
+    </div>
+
+    <div id="relforms"></div>
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center">
+      <button class="btn" onclick="addRel()">+ Add related video</button>
+      <button class="btn btn-go" onclick="generate()">Generate page</button>
+      <button class="btn" onclick="downloadImage()">Download Image</button>
+      <input id="save-name" type="text" placeholder="Save name" style="flex:1;min-width:180px;padding:4px 8px;border:1px solid #999;background:#fff;color:#000">
+      <button class="btn" onclick="saveCurrent()">Save</button>
+      <select id="save-list" style="padding:4px 8px;border:1px solid #999;background:#fff;color:#000;min-width:180px">
+        <option value="">Load saved page</option>
+      </select>
+      <button class="btn" onclick="loadSelected()">Load</button>
+      <button class="btn" onclick="deleteSelected()">Delete</button>
+    </div>
+    <div id="save-message" style="font-size:10px;color:#004400;margin-top:6px"></div>
+  </div>
+</div>
+
+<div id="yout" style="display:none">
+  <div class="yt" id="ytroot"></div>
+</div>
+</div>
+
+<script>
+let rels=[],rid=0,mainImg=null,ltImg=null;
+
+/* ───── inline SVG icons (flat 2012-style, not emoji) ───── */
+// thumbs up — filled orange/gold like the original Like button
+const SVG_THUMB_UP=`<svg class="yt-svg" viewBox="0 0 16 16" width="13" height="13"><path fill="#f0a500" stroke="#c98a00" stroke-width=".5" d="M5.5 7.2 8.4 1.4c.6-.2 1.4.2 1.4 1l-.5 3.1h3.6c.8 0 1.4.8 1.2 1.6l-1.3 5c-.1.6-.7 1-1.3 1H5.5V7.2zM1.6 7.2H4v6.9H1.6c-.4 0-.6-.3-.6-.6V7.8c0-.3.2-.6.6-.6z"/></svg>`;
+// thumbs down — flat gray
+const SVG_THUMB_DOWN=`<svg class="yt-svg" viewBox="0 0 16 16" width="13" height="13"><path fill="#888" stroke="#666" stroke-width=".5" d="M10.5 8.8 7.6 14.6c-.6.2-1.4-.2-1.4-1l.5-3.1H3.1c-.8 0-1.4-.8-1.2-1.6l1.3-5c.1-.6.7-1 1.3-1h6V8.8zM14.4 8.8H12V1.9h2.4c.4 0 .6.3.6.6v5.7c0 .3-.2.6-.6.6z"/></svg>`;
+// flag — outline pennant
+const SVG_FLAG=`<svg class="yt-svg" viewBox="0 0 16 16" width="12" height="13"><path fill="#888" d="M3 1h1v14H3z"/><path fill="none" stroke="#888" stroke-width="1.1" d="M4.5 2h8l-2 3 2 3h-8z"/></svg>`;
+// stats / report — small bar chart
+const SVG_STATS=`<svg class="yt-svg" viewBox="0 0 16 16" width="13" height="13"><rect x="1" y="9" width="3" height="5" fill="#999"/><rect x="6" y="5" width="3" height="9" fill="#999"/><rect x="11" y="2" width="3" height="12" fill="#999"/></svg>`;
+// speaker / volume
+const SVG_VOL=`<svg viewBox="0 0 16 16" width="15" height="15" style="vertical-align:middle"><path fill="#fff" d="M1 6h2.5L7 3v10L3.5 10H1z"/><path fill="none" stroke="#fff" stroke-width="1.1" d="M9 5.5a3 3 0 0 1 0 5M10.5 4a5 5 0 0 1 0 8"/></svg>`;
+// envelope (account corner)
+const SVG_MAIL=`<svg viewBox="0 0 16 12" width="14" height="11" style="vertical-align:middle"><rect x="0.5" y="0.5" width="15" height="11" rx="1" fill="#fff" stroke="#888"/><path fill="none" stroke="#888" stroke-width="1" d="M1 1.5 8 6.5 15 1.5"/></svg>`;
+
+const REL_DEFS=[
+  {title:"Kendrick Lamar - Bitch, Don't Kill My Vibe (Explicit)",by:'KendrickLamarVEVO',meta:'234,839,420 views · 11 years ago',dur:'5:13',featured:false,channel:false,subcount:''},
+  {title:'Kendrick Lamar',by:'26 videos',meta:'',dur:'',featured:false,channel:true,subcount:'16,300,000'},
+  {title:'The Rizzler\'s Flow is INSANE',by:'The Library of Letourneau',meta:'18,586 · 3 hours ago',dur:'30:07',featured:true,channel:false,subcount:''},
+  {title:'Kendrick Lamar\'s Not Like Us: Anatomy of a Lyrical Murder',by:'Rap Critic',meta:'364,855 views · Aug 19, 2024',dur:'21:49',featured:false,channel:false,subcount:''},
+];
+
+function addRel(def){
+  if(rid>=8){alert('Max 8 related videos');return}
+  const id=rid++;
+  const d=def||REL_DEFS[id]||{title:'Related video',by:'Some Channel',meta:'1,000 views · 1 year ago',dur:'3:00',featured:false,channel:false,subcount:''};
+  rels.push({id,img:null});
+  const div=document.createElement('div');
+  div.className='pf';div.id='rf-'+id;
+  div.innerHTML=`<div class="pf-hd">Sidebar item ${id+1}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div>
+      <div class="av-drop" style="width:120px;height:68px" id="ravd-${id}" onclick="document.getElementById('rfi-${id}').click()">
+        <div class="av-drop-txt">Click to<br>upload<br>thumbnail</div>
+      </div>
+      <input type="file" id="rfi-${id}" accept="image/*" onchange="loadRelImg(${id},this)">
+    </div>
+    <div style="flex:1;min-width:200px">
+      <div class="fr"><label>Title</label><input id="rt-${id}" value="${escAttr(d.title)}"></div>
+      <div class="fr"><label>Channel / by</label><input id="rb-${id}" value="${escAttr(d.by)}"></div>
+      <div class="fr"><label>Meta (views/age)</label><input id="rm-${id}" value="${escAttr(d.meta)}"></div>
+      <div class="fr"><label>Duration</label><input id="rd-${id}" value="${escAttr(d.dur)}"></div>
+      <div class="fr"><label>Featured</label><input type="checkbox" id="rfeat-${id}" ${d.featured?'checked':''} style="flex:none"></div>
+      <div class="fr"><label>Channel item</label><input type="checkbox" id="rchan-${id}" ${d.channel?'checked':''} style="flex:none"><span style="font-size:9px;color:#888;padding-top:3px">(shows Subscribe button + count)</span></div>
+      <div class="fr"><label>Subscriber count</label><input id="rsub-${id}" value="${escAttr(d.subcount||'')}"></div>
+    </div>
+  </div>
+  <div style="text-align:right;margin-top:5px"><button class="btn btn-sm" onclick="rmRel(${id})">Remove</button></div>`;
+  document.getElementById('relforms').appendChild(div);
+}
+
+function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function loadMainImg(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    mainImg=e.target.result;
+    const d=document.getElementById('avd-main');
+    d.classList.add('has-img');
+    let im=d.querySelector('img.av-img');
+    if(!im){im=document.createElement('img');im.className='av-img';d.appendChild(im)}
+    im.src=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function loadLtImg(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    ltImg=e.target.result;
+    const d=document.getElementById('avd-lt');
+    d.classList.add('has-img');
+    let im=d.querySelector('img.av-img');
+    if(!im){im=document.createElement('img');im.className='av-img';d.appendChild(im)}
+    im.src=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function loadRelImg(id,inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    rels.find(p=>p.id===id).img=e.target.result;
+    const d=document.getElementById('ravd-'+id);
+    d.classList.add('has-img');
+    let im=d.querySelector('img.av-img');
+    if(!im){im=document.createElement('img');im.className='av-img';d.appendChild(im)}
+    im.src=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function rmRel(id){document.getElementById('rf-'+id)?.remove();const i=rels.findIndex(p=>p.id===id);if(i>-1)rels.splice(i,1)}
+
+function v(id){return document.getElementById(id)?.value||''}
+function chk(id){return document.getElementById(id)?.checked||false}
+
+function buildSidebar(){
+  let html='';
+  rels.forEach(r=>{
+    const id=r.id;
+    const title=esc(v('rt-'+id));
+    const by=esc(v('rb-'+id));
+    const meta=esc(v('rm-'+id));
+    const dur=esc(v('rd-'+id));
+    const feat=chk('rfeat-'+id);
+    const isChan=chk('rchan-'+id);
+    const subcount=esc(v('rsub-'+id));
+    const thumb=r.img?`<img src="${r.img}">`:`<div class="rel-empty">no thumb</div>`;
+    if(isChan){
+      // channel-style sidebar entry (title, "N videos", Subscribe button + sub count)
+      html+=`<div class="yt-rel">
+        <div class="yt-rel-thumb">${thumb}</div>
+        <div class="yt-rel-info">
+          <span class="yt-rel-title">${title}</span>
+          <div class="yt-rel-by">${by}</div>
+          <div class="yt-rel-sub"><span class="sub-btn">Subscribe</span>${subcount?`<span class="sub-count">${subcount}</span>`:''}</div>
+        </div>
+      </div>`;
+    }else{
+      html+=`<div class="yt-rel">
+        <div class="yt-rel-thumb">${thumb}${dur?`<div class="rel-dur">${dur}</div>`:''}</div>
+        <div class="yt-rel-info">
+          <span class="yt-rel-title">${title}${feat?'<span class="yt-rel-featured">FEATURED</span>':''}</span>
+          <div class="yt-rel-by">by ${by}</div>
+          <div class="yt-rel-meta">${meta}</div>
+        </div>
+      </div>`;
+    }
+  });
+  return html;
+}
+
+function generate(){
+  const title=esc(v('ttl'));
+  const chan=esc(v('chan'));
+  const views=esc(v('views'));
+  const likes=esc(v('likes'));
+  const dislikes=esc(v('dislikes'));
+  const cur=esc(v('curtime'));
+  const tot=esc(v('tottime'));
+  const caption=esc(v('caption'));
+  const uploader=esc(v('uploader'));
+  const udate=esc(v('udate'));
+  const acct=esc(v('acct'));
+  const desc=esc(v('desc'));
+  const showVevo=chk('vevo');
+  const showHd=chk('hd');
+  const ltShow=chk('ltshow');
+  const ltSong=esc(v('ltsong'));
+
+  const frame=mainImg?`<img class="yt-frame" src="${mainImg}">`:`<div class="yt-frame-empty">Upload a video frame image</div>`;
+
+  // like bar: green portion sized from likes vs dislikes (red is the track)
+  const likeNum=parseInt(v('likes').replace(/[^0-9]/g,''),10)||0;
+  const disNum=parseInt(v('dislikes').replace(/[^0-9]/g,''),10)||0;
+  const greenPct=(likeNum+disNum)>0?Math.round(likeNum/(likeNum+disNum)*100):97;
+
+  const ltArt=ltImg?`<img src="${ltImg}">`:'';
+
+  const html=`
+  <div class="yt-top">
+    <div class="yt-logo"><span class="yt-you">You</span><span class="yt-tube">Tube</span></div>
+    <div class="yt-search"><input value=""><button>Search</button></div>
+    <div class="yt-nav"><a>Browse</a><a>Movies</a><a>Upload</a></div>
+    <div class="yt-account">${SVG_MAIL} ${acct} <span class="arrow">&#9660;</span></div>
+  </div>
+  <div class="yt-body">
+    <div class="yt-main">
+      <div class="yt-title">${title}</div>
+      <div class="yt-channel"><a>${chan}</a><span class="yt-sub">Subscribed</span></div>
+      <div class="yt-player">
+        ${frame}
+        <div class="yt-info-icon"></div>
+        ${showVevo?'<div class="yt-vevo">vevo</div>':''}
+        ${caption?`<div class="yt-cc">${caption}</div>`:''}
+        <div class="yt-progress">
+          <div class="yt-buffer" style="width:62%"></div>
+          <div class="yt-played" style="width:16%"></div>
+          <div class="yt-scrub" style="left:16%"></div>
+        </div>
+        <div class="yt-controls">
+          <span class="yt-ctrl-play">&#9654;</span>
+          <span class="yt-ctrl-vol">${SVG_VOL}</span>
+          <span class="yt-time">${cur} / ${tot}</span>
+          <span class="yt-rightctrl">
+            <span>&#43;</span>
+            <span class="yt-cc-btn">CC</span>
+            ${showHd?'<span class="yt-hd">HD</span>':''}
+            <span>&#9662;</span>
+            <span>&#9633;</span>
+          </span>
+        </div>
+      </div>
+      <div class="yt-actions">
+        <div class="yt-act-left">
+          <span class="yt-act">${SVG_THUMB_UP} Like</span>
+          <span class="yt-iconbtn">${SVG_THUMB_DOWN}</span>
+          <span class="yt-act">Add to</span>
+          <span class="yt-act">Share</span>
+          <span class="yt-iconbtn">${SVG_FLAG}</span>
+          <span class="yt-iconbtn">${SVG_STATS}</span>
+        </div>
+        <div class="yt-views">
+          <div class="yt-viewrow"><div class="yt-viewcount">${views}</div><div class="yt-graph"></div></div>
+          <div class="yt-likebar"><div class="bar"><div class="up" style="width:${greenPct}%"></div></div></div>
+          <div class="yt-likebar">${likes} likes, ${dislikes} dislikes</div>
+        </div>
+      </div>
+      <div class="yt-uploadinfo">Uploaded by <a>${uploader}</a> on ${udate}</div>
+      <div class="yt-desc">${desc}</div>
+      ${ltShow?`<div class="yt-listening">
+        <div class="lt-art">${ltArt}</div>
+        <div class="lt-meta"><div class="lt-label">Listening to</div><div class="lt-song">Song</div><div class="lt-title">${ltSong}</div></div>
+        <div class="lt-nav"><span>&#9664;</span><span>&#9654;</span></div>
+      </div>`:''}
+      <div class="yt-showmore">Show more &#9660;</div>
+    </div>
+    <div class="yt-side">
+      <div class="yt-side-hd"><span class="up-next">Up Next</span><span class="autoplay">Autoplay <span class="yt-toggle"></span></span></div>
+      ${buildSidebar()}
+    </div>
+  </div>`;
+
+  document.getElementById('ytroot').innerHTML=html;
+  document.getElementById('yout').style.display='block';
+  document.getElementById('yout').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ───── save / load ───── */
+const STORAGE_KEY='bensutils_youtube_saves';
+
+function getSavedSaves(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{}}catch(e){return{}}}
+function persistSaves(s){localStorage.setItem(STORAGE_KEY,JSON.stringify(s))}
+
+function updateSaveList(){
+  const list=document.getElementById('save-list');
+  const saves=getSavedSaves();
+  const selected=list.value;
+  list.innerHTML='<option value="">Load saved page</option>';
+  Object.keys(saves).sort().forEach(name=>{
+    const o=document.createElement('option');o.value=name;o.textContent=name;list.appendChild(o);
+  });
+  if(selected&&saves[selected])list.value=selected;
+}
+
+function showSaveMessage(text,color='#004400'){
+  const el=document.getElementById('save-message');el.textContent=text;el.style.color=color;
+}
+
+function readCurrentState(){
+  const fields={};
+  ['ttl','chan','views','likes','dislikes','curtime','tottime','caption','uploader','udate','acct','desc','ltsong'].forEach(k=>fields[k]=v(k));
+  fields.vevo=chk('vevo');fields.hd=chk('hd');fields.ltshow=chk('ltshow');
+  const relData=rels.map(r=>({
+    img:r.img||null,
+    title:v('rt-'+r.id),by:v('rb-'+r.id),meta:v('rm-'+r.id),dur:v('rd-'+r.id),
+    featured:chk('rfeat-'+r.id),channel:chk('rchan-'+r.id),subcount:v('rsub-'+r.id)
+  }));
+  return {fields,mainImg:mainImg||null,ltImg:ltImg||null,relData};
+}
+
+function saveCurrent(){
+  const name=document.getElementById('save-name').value.trim();
+  if(!name){showSaveMessage('Enter a save name before saving.','#a00');return}
+  const saves=getSavedSaves();
+  saves[name]=readCurrentState();
+  persistSaves(saves);updateSaveList();
+  showSaveMessage(`Saved page “${name}”.`);
+}
+
+function loadSelected(){
+  const name=document.getElementById('save-list').value;
+  if(!name){showSaveMessage('Select a saved page to load.','#a00');return}
+  const data=getSavedSaves()[name];
+  if(!data){showSaveMessage('Saved page not found.','#a00');return}
+  loadSave(data);
+  showSaveMessage(`Loaded page “${name}”.`);
+}
+
+function deleteSelected(){
+  const name=document.getElementById('save-list').value;
+  if(!name){showSaveMessage('Select a saved page to delete.','#a00');return}
+  const saves=getSavedSaves();
+  if(!saves[name]){showSaveMessage('Saved page not found.','#a00');return}
+  delete saves[name];persistSaves(saves);updateSaveList();
+  showSaveMessage(`Deleted save “${name}”.`);
+}
+
+function loadSave(data){
+  const f=data.fields||{};
+  Object.keys(f).forEach(k=>{
+    const el=document.getElementById(k);
+    if(!el)return;
+    if(el.type==='checkbox')el.checked=!!f[k];else el.value=f[k];
+  });
+  // main image
+  mainImg=data.mainImg||null;
+  const md=document.getElementById('avd-main');
+  md.classList.remove('has-img');
+  md.querySelector('img.av-img')?.remove();
+  if(mainImg){
+    md.classList.add('has-img');
+    const im=document.createElement('img');im.className='av-img';im.src=mainImg;md.appendChild(im);
+  }
+  // listening-to album art
+  ltImg=data.ltImg||null;
+  const ld=document.getElementById('avd-lt');
+  ld.classList.remove('has-img');
+  ld.querySelector('img.av-img')?.remove();
+  if(ltImg){
+    ld.classList.add('has-img');
+    const im=document.createElement('img');im.className='av-img';im.src=ltImg;ld.appendChild(im);
+  }
+  // rels
+  rels=[];rid=0;
+  document.getElementById('relforms').innerHTML='';
+  (data.relData||[]).forEach(r=>{
+    addRel({title:r.title,by:r.by,meta:r.meta,dur:r.dur,featured:r.featured,channel:r.channel,subcount:r.subcount});
+    const id=rels[rels.length-1].id;
+    if(r.img){
+      rels.find(p=>p.id===id).img=r.img;
+      const d=document.getElementById('ravd-'+id);
+      d.classList.add('has-img');
+      const im=document.createElement('img');im.className='av-img';im.src=r.img;d.appendChild(im);
+    }
+  });
+}
+
+updateSaveList();
+addRel();addRel();addRel();addRel();
+
+/* ───── download as PNG ───── */
+async function downloadImage(){
+  const msg=document.getElementById('save-message');
+  if(typeof html2canvas==='undefined'){
+    msg.style.color='#a00';
+    msg.textContent='Capture library failed to load — check your internet connection.';
+    return;
+  }
+  generate();
+  const node=document.getElementById('yout');
+  msg.style.color='#004400';msg.textContent='Rendering image…';
+  try{
+    const rect=node.getBoundingClientRect();
+    const canvas=await html2canvas(node,{
+      backgroundColor:'#ffffff',
+      scale:Math.min(window.devicePixelRatio||1,2),
+      useCORS:true,logging:false,
+      width:Math.ceil(rect.width),height:Math.ceil(rect.height),
+      scrollX:0,scrollY:0
+    });
+    const ttl=(v('ttl')||'video').replace(/[^a-z0-9_-]+/gi,'_').slice(0,40)||'video';
+    const link=document.createElement('a');
+    link.download='old-youtube-'+ttl+'.png';
+    link.href=canvas.toDataURL('image/png');
+    document.body.appendChild(link);link.click();link.remove();
+    msg.textContent='Image downloaded!';
+  }catch(err){
+    msg.style.color='#a00';
+    msg.textContent='Could not generate image: '+(err&&err.message?err.message:err);
+  }
+}
+</script>
