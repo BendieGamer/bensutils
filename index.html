@@ -216,7 +216,7 @@
           </label>
         </div>
         <div class="setting-item" id="hair-texture-container" style="margin-left: 2em; border-left: 2px solid #333; padding-left: 1em;">
-          <p style="margin: 0 0 .4em;">hair textures (optional): the meshpart->specialmesh conversion drops the hair's TextureId. enter <code>HatName=assetId</code> per line to restore it. e.g. <code>Pigtails=6372755229</code></p>
+          <p style="margin: 0 0 .4em;">hair textures: now auto-detected from the source file. only fill this in to <b>override</b> a texture or if auto-detection missed one. format <code>HatName=assetId</code> per line, e.g. <code>Pigtails=6372755229</code></p>
           <textarea id="hair-texture-map" rows="3" style="width: 100%; box-sizing: border-box; font-family: monospace;" placeholder="Pigtails=6372755229"></textarea>
         </div>
 
@@ -663,6 +663,7 @@
         textureMap = textureMap || {};
         let count = 0;
         let textured = 0;
+        const hatNames = []; // names of every hat we converted, for diagnostics
         // opening tag of an accessory-family item. AccessoryType-based filtering
         // is deliberately NOT applied: in old clients any of these should become
         // a Hat to render at all, and AccessoryType isn't reliably present in
@@ -759,7 +760,7 @@
         }
         out += text.slice(cursor);
 
-        return { text: out, count, textured };
+        return { text: out, count, textured, hatNames };
       },
 
       // parses the hair texture textarea into a { hatName -> assetId } map.
@@ -776,6 +777,66 @@
           const idM = idPart.match(/(\d+)\s*$/);
           if (name && idM) map[name] = idM[1];
         });
+        return map;
+      },
+
+      // auto-extracts hair textures straight from the source file, so the user
+      // doesn't have to type them. the WASM's meshpart->specialmesh conversion
+      // drops MeshPart.TextureID, but if we run a SEPARATE conversion pass with
+      // meshparts left OFF (+ force xml), each accessory's Handle stays a
+      // MeshPart and keeps its TextureID. we walk those and build
+      // { accessoryName -> textureId }. returns {} on any failure (best effort).
+      extractHairTexturesFromSource(bytes, instanceMappings) {
+        const map = {};
+        try {
+          // convert to xml WITHOUT meshpart conversion so TextureID survives.
+          // everything else is neutral: no folder/url/terrain/union changes.
+          const xmlBytes = fix_place(
+            bytes, false, /*force_xml*/ true, /*force_binary*/ false,
+            /*folders_to_models*/ false, instanceMappings,
+            /*convert_assetid_to_url*/ false, '',
+            /*convert_meshpart*/ false, /*smooth_to_voxel*/ false,
+            TerrainFormat.ClusterGridV1, /*downgrade_voxel*/ false,
+            TerrainFormat.ClusterGridV1, /*fix_unions*/ false
+          );
+          const text = new TextDecoder('utf-8').decode(xmlBytes);
+
+          // for each accessory-family item, find its Name and the first
+          // TextureID url inside it (the Handle MeshPart's). depth-balance the
+          // item so we capture only this accessory's subtree.
+          const openRe = /<Item class="(Accessory|HairAccessory)"[^>]*>/g;
+          const openTag = /<Item\b[^>]*>/g;
+          const closeTag = /<\/Item>/g;
+          let m;
+          while ((m = openRe.exec(text)) !== null) {
+            let depth = 1, pos = openRe.lastIndex, endBody = -1;
+            const startBody = openRe.lastIndex;
+            while (depth > 0) {
+              openTag.lastIndex = pos; closeTag.lastIndex = pos;
+              const nO = openTag.exec(text), nC = closeTag.exec(text);
+              if (!nC) break;
+              if (nO && nO.index < nC.index) { depth++; pos = openTag.lastIndex; }
+              else { depth--; if (depth === 0) endBody = nC.index; pos = closeTag.lastIndex; }
+            }
+            if (endBody === -1) continue;
+            const body = text.slice(startBody, endBody);
+            openRe.lastIndex = pos;
+
+            const nameM = body.match(/<string name="Name">([^<]*)<\/string>/);
+            const name = nameM ? nameM[1].trim() : '';
+            if (!name) continue;
+
+            // MeshPart stores its texture as <Content name="TextureID"> (capital
+            // ID). grab the first non-null url. tolerate TextureId too.
+            const texM = body.match(/<Content name="TextureI[dD]">\s*<url>([^<]+)<\/url>/);
+            if (texM) {
+              const idM = texM[1].match(/(\d+)\s*$/);
+              if (idM) map[name] = idM[1];
+            }
+          }
+        } catch (err) {
+          console.warn('could not auto-extract hair textures from source:', err && err.message ? err.message : err);
+        }
         return map;
       },
 
@@ -910,10 +971,26 @@
                   console.log(`converted wedges: ${result.count} WedgePart(s) -> Part (shape=Wedge) in ${file.name}`);
                 }
                 if (convertHair) {
-                  const textureMap = this.getHairTextureMap();
+                  // auto-pull textures from the source file (the WASM drops them
+                  // during meshpart conversion). manual box entries override the
+                  // auto-detected ones for the same hat name.
+                  const autoMap = this.extractHairTexturesFromSource(bytes, instanceMappings);
+                  const manualMap = this.getHairTextureMap();
+                  const textureMap = Object.assign({}, autoMap, manualMap);
+                  const autoCount = Object.keys(autoMap).length;
+                  if (autoCount > 0) {
+                    console.log(`auto-detected ${autoCount} hair texture(s) from source: ${Object.entries(autoMap).map(([k, v]) => `${k}=${v}`).join(', ')}`);
+                  }
                   const result = this.convertHairToXml(text, textureMap);
                   text = result.text;
                   console.log(`converted hair: ${result.count} Accessory(s) -> Hat in ${file.name} (${result.textured} texture(s) restored)`);
+                  // texture diagnostics: if textures were available but none
+                  // (or not all) were applied, show the actual hat names so a
+                  // name mismatch is obvious.
+                  const wantTextures = Object.keys(textureMap).length > 0;
+                  if (wantTextures && result.count > 0 && result.textured < result.count) {
+                    console.warn(`hair texture: restored ${result.textured}/${result.count}. hat names in file: [${result.hatNames.join(', ')}]. available texture keys: [${Object.keys(textureMap).join(', ')}]. names must match (or supply exactly one map entry to apply to all).`);
+                  }
                   if (result.count === 0) {
                     // diagnostic: nothing matched. dump distinct instance classes
                     // so we can see what hair ("Pigtails") is actually serialized
