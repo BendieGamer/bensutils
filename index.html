@@ -801,14 +801,15 @@
           );
           const text = new TextDecoder('utf-8').decode(xmlBytes);
 
-          // for each accessory-family item, find its Name and the first
-          // TextureID url inside it (the Handle MeshPart's). depth-balance the
-          // item so we capture only this accessory's subtree.
+          // for each accessory-family item, find its Name and the Handle's
+          // texture id. depth-balance the item so we only scan its subtree.
           const openRe = /<Item class="(Accessory|HairAccessory)"[^>]*>/g;
           const openTag = /<Item\b[^>]*>/g;
           const closeTag = /<\/Item>/g;
           let m;
+          let found = 0;
           while ((m = openRe.exec(text)) !== null) {
+            found++;
             let depth = 1, pos = openRe.lastIndex, endBody = -1;
             const startBody = openRe.lastIndex;
             while (depth > 0) {
@@ -826,16 +827,36 @@
             const name = nameM ? nameM[1].trim() : '';
             if (!name) continue;
 
-            // MeshPart stores its texture as <Content name="TextureID"> (capital
-            // ID). grab the first non-null url. tolerate TextureId too.
-            const texM = body.match(/<Content name="TextureI[dD]">\s*<url>([^<]+)<\/url>/);
-            if (texM) {
-              const idM = texM[1].match(/(\d+)\s*$/);
-              if (idM) map[name] = idM[1];
+            // try several texture storage shapes, most-specific first:
+            //  1. MeshPart Handle: <Content name="TextureID"|"TextureId"> url
+            //  2. a Texture/SurfaceAppearance content prop holding an asset url
+            //  3. any asset url that isn't the MeshID/MeshId (last-resort)
+            // urls may be rbxassetid://N OR http://.../asset/?id=N.
+            const pickId = (s) => {
+              if (!s) return null;
+              const a = s.match(/id=(\d+)/) || s.match(/rbxassetid:\/\/(\d+)/) || s.match(/(\d{4,})/);
+              return a ? a[1] : null;
+            };
+            let id = null;
+            let mm = body.match(/<Content name="TextureI[dD]">\s*<url>([^<]+)<\/url>/);
+            if (mm) id = pickId(mm[1]);
+            if (!id) {
+              mm = body.match(/<Content name="(?:Texture|ColorMap|TexturePack)">\s*<url>([^<]+)<\/url>/);
+              if (mm) id = pickId(mm[1]);
+            }
+            if (id) {
+              map[name] = id;
+              console.log(`  hair texture scan: "${name}" -> ${id}`);
+            } else {
+              // surface what the handle actually contains so we can adapt.
+              const handleM = body.match(/<Item class="MeshPart"[\s\S]*?<\/Properties>/);
+              const snippet = (handleM ? handleM[0] : body).slice(0, 600).replace(/\s+/g, ' ');
+              console.warn(`  hair texture scan: "${name}" has no texture id. handle/props snippet: ${snippet}`);
             }
           }
+          console.log(`hair texture scan: examined ${found} accessory(s) in source`);
         } catch (err) {
-          console.warn('could not auto-extract hair textures from source:', err && err.message ? err.message : err);
+          console.error('hair texture auto-extract FAILED (the pre-scan fix_place pass threw):', err && err.message ? err.message : err);
         }
         return map;
       },
