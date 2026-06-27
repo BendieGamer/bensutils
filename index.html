@@ -215,6 +215,10 @@
             convert hair Accessories into Hat (Accessory didn't exist in 2009) <span class="experimental-tag">[xml only]</span>
           </label>
         </div>
+        <div class="setting-item" id="hair-texture-container" style="margin-left: 2em; border-left: 2px solid #333; padding-left: 1em;">
+          <p style="margin: 0 0 .4em;">hair textures (optional): the meshpart->specialmesh conversion drops the hair's TextureId. enter <code>HatName=assetId</code> per line to restore it. e.g. <code>Pigtails=6372755229</code></p>
+          <textarea id="hair-texture-map" rows="3" style="width: 100%; box-sizing: border-box; font-family: monospace;" placeholder="Pigtails=6372755229"></textarea>
+        </div>
 
         <hr>
 
@@ -481,6 +485,7 @@
       toggleFixUnions: document.getElementById('toggle-fix-unions'),
       toggleConvertWedges: document.getElementById('toggle-convert-wedges'),
       toggleConvertHair: document.getElementById('toggle-convert-hair'),
+      hairTextureMap: document.getElementById('hair-texture-map'),
       currentFile: null,
       currentFiles: [],
 
@@ -647,9 +652,17 @@
       // SpecialMesh, Attachment, etc.) which each have their own </Item>, so a
       // non-greedy regex match would stop at the first nested close. we depth-
       // count <Item>/</Item> to find each Accessory's true matching close tag.
-      // operates on raw xml text. returns { text, count }.
-      convertHairToXml(text) {
+      //
+      // textureMap (optional): { hatName -> assetId }. the WASM meshpart->
+      // specialmesh conversion drops the original MeshPart.TextureID, so the
+      // hair renders untextured ("no color"). when a converted hat's Name has a
+      // mapping, we fill its Handle SpecialMesh's empty TextureId with
+      // http://www.roblox.com/asset/?id=<assetId> so old clients load it.
+      // operates on raw xml text. returns { text, count, textured }.
+      convertHairToXml(text, textureMap) {
+        textureMap = textureMap || {};
         let count = 0;
+        let textured = 0;
         // opening tag of an accessory-family item. AccessoryType-based filtering
         // is deliberately NOT applied: in old clients any of these should become
         // a Hat to render at all, and AccessoryType isn't reliably present in
@@ -694,7 +707,31 @@
 
           // strip the AccessoryType token if present; the legacy Hat class
           // doesn't know it and unknown properties can break loading.
-          const newBody = body.replace(/\s*<token name="AccessoryType">\s*\d+\s*<\/token>/g, '');
+          let newBody = body.replace(/\s*<token name="AccessoryType">\s*\d+\s*<\/token>/g, '');
+
+          // restore the hair texture the meshpart conversion dropped. the hat's
+          // Name lives in its own <Properties> block (the first <string
+          // name="Name"> after this item's start, before any nested item's
+          // properties — matching the shallowest occurrence is fine here).
+          const nameM = newBody.match(/<string name="Name">([^<]*)<\/string>/);
+          const hatName = nameM ? nameM[1].trim() : '';
+          const assetId = hatName && Object.prototype.hasOwnProperty.call(textureMap, hatName)
+            ? textureMap[hatName] : null;
+          if (assetId) {
+            const url = `http://www.roblox.com/asset/?id=${assetId}`;
+            // fill an empty SpecialMesh TextureId (the <null> form the WASM emits)
+            // with the asset url. only the first empty TextureId is set, which is
+            // the Handle's mesh. if it's already populated, leave it.
+            let didSet = false;
+            newBody = newBody.replace(
+              /(<Content name="TextureId">)\s*<null>\s*<\/null>\s*(<\/Content>)/,
+              (_w, open, close) => {
+                didSet = true;
+                return `${open}<url>${url}</url>${close}`;
+              }
+            );
+            if (didSet) textured++;
+          }
 
           out += text.slice(cursor, startOuter);
           out += `<Item class="Hat"${attrs}>${newBody}</Item>`;
@@ -704,7 +741,24 @@
         }
         out += text.slice(cursor);
 
-        return { text: out, count };
+        return { text: out, count, textured };
+      },
+
+      // parses the hair texture textarea into a { hatName -> assetId } map.
+      // accepts "HatName=assetId" per line; assetId may be a bare number or an
+      // rbxassetid://N / full url (we extract the trailing digits).
+      getHairTextureMap() {
+        const map = {};
+        const raw = (this.hairTextureMap && this.hairTextureMap.value) || '';
+        raw.split('\n').forEach((line) => {
+          const eq = line.indexOf('=');
+          if (eq === -1) return;
+          const name = line.slice(0, eq).trim();
+          const idPart = line.slice(eq + 1).trim();
+          const idM = idPart.match(/(\d+)\s*$/);
+          if (name && idM) map[name] = idM[1];
+        });
+        return map;
       },
 
       setFile(files) {
@@ -838,10 +892,10 @@
                   console.log(`converted wedges: ${result.count} WedgePart(s) -> Part (shape=Wedge) in ${file.name}`);
                 }
                 if (convertHair) {
-                  console.log('[hair pass v2] depth-counting matcher active');
-                  const result = this.convertHairToXml(text);
+                  const textureMap = this.getHairTextureMap();
+                  const result = this.convertHairToXml(text, textureMap);
                   text = result.text;
-                  console.log(`converted hair: ${result.count} Accessory(s) -> Hat in ${file.name}`);
+                  console.log(`converted hair: ${result.count} Accessory(s) -> Hat in ${file.name} (${result.textured} texture(s) restored)`);
                   if (result.count === 0) {
                     // diagnostic: nothing matched. dump distinct instance classes
                     // so we can see what hair ("Pigtails") is actually serialized
