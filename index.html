@@ -635,41 +635,76 @@
         return { text, count };
       },
 
-      // converts modern hair Accessories into legacy Hat accoutrements. the
-      // Accessory class didn't exist in 2009-era roblox; hats/hair were all the
-      // Hat class (an Accoutrement). hair is stored either as an explicit
-      // HairAccessory class, or as an Accessory whose AccessoryType enum is Hair
-      // (token value 4). retagging the <Item> class to "Hat" lets old clients
-      // load the handle + mesh so the hair renders. the AttachmentPoint/Grip
-      // properties on the Accessory carry over unchanged and old Hat honors them.
+      // converts modern hair/hat Accessories into legacy Hat accoutrements. the
+      // Accessory class didn't exist in 2009-era roblox; hats and hair were all
+      // the Hat class (an Accoutrement). modern places store these as Accessory
+      // (or the older HairAccessory class), which old clients can't load, so the
+      // mesh never renders. retagging the <Item> class to "Hat" lets old clients
+      // load the handle + mesh. the Handle/Mesh/Attachment children, plus the
+      // AttachmentPoint property, carry over unchanged and old Hat honors them.
+      //
+      // NOTE: an Accessory's body contains nested <Item> children (its Handle,
+      // SpecialMesh, Attachment, etc.) which each have their own </Item>, so a
+      // non-greedy regex match would stop at the first nested close. we depth-
+      // count <Item>/</Item> to find each Accessory's true matching close tag.
       // operates on raw xml text. returns { text, count }.
       convertHairToXml(text) {
         let count = 0;
+        // opening tag of an accessory-family item. AccessoryType-based filtering
+        // is deliberately NOT applied: in old clients any of these should become
+        // a Hat to render at all, and AccessoryType isn't reliably present in
+        // binary->xml output. matches Accessory, HairAccessory, and the rare
+        // CharacterMesh-free Hat already named "Accessory".
+        const openRe = /<Item class="(Accessory|HairAccessory)"([^>]*)>/g;
+        const openTag = /<Item\b[^>]*>/g;
+        const closeTag = /<\/Item>/g;
 
-        // match a whole <Item class="Accessory"|"HairAccessory" ...> ... </Item>
-        // block. accessory items don't nest other accessory items inside their
-        // own properties, so a non-greedy match to the next </Item> is safe.
-        const itemRe = /<Item class="(Accessory|HairAccessory)"([^>]*)>([\s\S]*?)<\/Item>/g;
+        let out = '';
+        let cursor = 0;
+        let m;
+        while ((m = openRe.exec(text)) !== null) {
+          const attrs = m[2];
+          const startOuter = m.index;
+          const startBody = openRe.lastIndex;
 
-        text = text.replace(itemRe, (whole, cls, attrs, body) => {
-          // HairAccessory is always hair. a plain Accessory is only hair when its
-          // AccessoryType enum reads Hair (4) — leave other accessory types alone.
-          if (cls === 'Accessory') {
-            const typeRe = /<token name="AccessoryType">\s*(\d+)\s*<\/token>/;
-            const m = body.match(typeRe);
-            if (!m || m[1] !== '4') return whole;
+          // walk forward from the body start, tracking <Item> nesting depth, to
+          // find the </Item> that closes THIS accessory (depth returns to 0).
+          let depth = 1;
+          let pos = startBody;
+          let endBody = -1;
+          while (depth > 0) {
+            openTag.lastIndex = pos;
+            closeTag.lastIndex = pos;
+            const nextOpen = openTag.exec(text);
+            const nextClose = closeTag.exec(text);
+            if (!nextClose) break; // malformed; bail
+            if (nextOpen && nextOpen.index < nextClose.index) {
+              depth++;
+              pos = openTag.lastIndex;
+            } else {
+              depth--;
+              if (depth === 0) endBody = nextClose.index;
+              pos = closeTag.lastIndex;
+            }
           }
+          if (endBody === -1) continue; // couldn't balance; leave untouched
 
+          const body = text.slice(startBody, endBody);
+          const endOuter = pos; // just past the closing </Item>
+
+          // strip the AccessoryType token if present; the legacy Hat class
+          // doesn't know it and unknown properties can break loading.
+          const newBody = body.replace(/\s*<token name="AccessoryType">\s*\d+\s*<\/token>/g, '');
+
+          out += text.slice(cursor, startOuter);
+          out += `<Item class="Hat"${attrs}>${newBody}</Item>`;
+          cursor = endOuter;
           count++;
+          openRe.lastIndex = endOuter; // resume scanning after this item
+        }
+        out += text.slice(cursor);
 
-          // strip the AccessoryType token; the legacy Hat class doesn't know it
-          // and rejecting unknown properties can break loading on old clients.
-          body = body.replace(/\s*<token name="AccessoryType">\s*\d+\s*<\/token>/g, '');
-
-          return `<Item class="Hat"${attrs}>${body}</Item>`;
-        });
-
-        return { text, count };
+        return { text: out, count };
       },
 
       setFile(files) {
@@ -806,6 +841,22 @@
                   const result = this.convertHairToXml(text);
                   text = result.text;
                   console.log(`converted hair: ${result.count} Accessory(s) -> Hat in ${file.name}`);
+                  if (result.count === 0) {
+                    // diagnostic: nothing matched. dump distinct instance classes
+                    // so we can see what hair ("Pigtails") is actually serialized
+                    // as in this file, instead of guessing at the class name.
+                    const classes = {};
+                    const re = /<Item class="([^"]+)"/g;
+                    let cm;
+                    while ((cm = re.exec(text)) !== null) {
+                      classes[cm[1]] = (classes[cm[1]] || 0) + 1;
+                    }
+                    const summary = Object.entries(classes)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([k, v]) => `${k}(${v})`)
+                      .join(', ');
+                    console.warn(`no hair found in ${file.name}. instance classes present: ${summary}`);
+                  }
                 }
                 out = new TextEncoder().encode(text);
               } else {
