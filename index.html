@@ -715,21 +715,39 @@
           // properties — matching the shallowest occurrence is fine here).
           const nameM = newBody.match(/<string name="Name">([^<]*)<\/string>/);
           const hatName = nameM ? nameM[1].trim() : '';
-          const assetId = hatName && Object.prototype.hasOwnProperty.call(textureMap, hatName)
-            ? textureMap[hatName] : null;
+
+          // pick the asset id: prefer an exact name match; if the user supplied
+          // exactly one mapping entry, fall back to it for any hat so a name
+          // typo/mismatch doesn't silently block the texture.
+          const mapKeys = Object.keys(textureMap);
+          let assetId = null;
+          if (Object.prototype.hasOwnProperty.call(textureMap, hatName)) {
+            assetId = textureMap[hatName];
+          } else if (mapKeys.length === 1) {
+            assetId = textureMap[mapKeys[0]];
+          }
+
+          hatNames.push(hatName || '(unnamed)');
+
           if (assetId) {
             const url = `http://www.roblox.com/asset/?id=${assetId}`;
-            // fill an empty SpecialMesh TextureId (the <null> form the WASM emits)
-            // with the asset url. only the first empty TextureId is set, which is
-            // the Handle's mesh. if it's already populated, leave it.
+            // fill the SpecialMesh TextureId. the WASM emits it either as the
+            // empty <null> form OR may omit it; handle both. only set when it's
+            // currently empty so we never clobber a real texture.
             let didSet = false;
-            newBody = newBody.replace(
-              /(<Content name="TextureId">)\s*<null>\s*<\/null>\s*(<\/Content>)/,
-              (_w, open, close) => {
-                didSet = true;
-                return `${open}<url>${url}</url>${close}`;
-              }
-            );
+            if (/<Content name="TextureId">\s*<null>\s*<\/null>\s*<\/Content>/.test(newBody)) {
+              newBody = newBody.replace(
+                /(<Content name="TextureId">)\s*<null>\s*<\/null>\s*(<\/Content>)/,
+                `$1<url>${url}</url>$2`
+              );
+              didSet = true;
+            } else if (/<Content name="TextureId">\s*<\/Content>/.test(newBody)) {
+              newBody = newBody.replace(
+                /<Content name="TextureId">\s*<\/Content>/,
+                `<Content name="TextureId"><url>${url}</url></Content>`
+              );
+              didSet = true;
+            }
             if (didSet) textured++;
           }
 
