@@ -838,6 +838,7 @@
                   console.log(`converted wedges: ${result.count} WedgePart(s) -> Part (shape=Wedge) in ${file.name}`);
                 }
                 if (convertHair) {
+                  console.log('[hair pass v2] depth-counting matcher active');
                   const result = this.convertHairToXml(text);
                   text = result.text;
                   console.log(`converted hair: ${result.count} Accessory(s) -> Hat in ${file.name}`);
