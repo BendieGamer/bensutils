@@ -209,6 +209,12 @@
             convert WedgeParts into Part + shape property (retro wedges) <span class="experimental-tag">[xml only]</span>
           </label>
         </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="toggle-convert-hair" checked>
+            convert hair Accessories into Hat (Accessory didn't exist in 2009) <span class="experimental-tag">[xml only]</span>
+          </label>
+        </div>
 
         <hr>
 
@@ -474,6 +480,7 @@
       voxelVersionSelect: document.getElementById('voxel-version-select'),
       toggleFixUnions: document.getElementById('toggle-fix-unions'),
       toggleConvertWedges: document.getElementById('toggle-convert-wedges'),
+      toggleConvertHair: document.getElementById('toggle-convert-hair'),
       currentFile: null,
       currentFiles: [],
 
@@ -628,6 +635,43 @@
         return { text, count };
       },
 
+      // converts modern hair Accessories into legacy Hat accoutrements. the
+      // Accessory class didn't exist in 2009-era roblox; hats/hair were all the
+      // Hat class (an Accoutrement). hair is stored either as an explicit
+      // HairAccessory class, or as an Accessory whose AccessoryType enum is Hair
+      // (token value 4). retagging the <Item> class to "Hat" lets old clients
+      // load the handle + mesh so the hair renders. the AttachmentPoint/Grip
+      // properties on the Accessory carry over unchanged and old Hat honors them.
+      // operates on raw xml text. returns { text, count }.
+      convertHairToXml(text) {
+        let count = 0;
+
+        // match a whole <Item class="Accessory"|"HairAccessory" ...> ... </Item>
+        // block. accessory items don't nest other accessory items inside their
+        // own properties, so a non-greedy match to the next </Item> is safe.
+        const itemRe = /<Item class="(Accessory|HairAccessory)"([^>]*)>([\s\S]*?)<\/Item>/g;
+
+        text = text.replace(itemRe, (whole, cls, attrs, body) => {
+          // HairAccessory is always hair. a plain Accessory is only hair when its
+          // AccessoryType enum reads Hair (4) — leave other accessory types alone.
+          if (cls === 'Accessory') {
+            const typeRe = /<token name="AccessoryType">\s*(\d+)\s*<\/token>/;
+            const m = body.match(typeRe);
+            if (!m || m[1] !== '4') return whole;
+          }
+
+          count++;
+
+          // strip the AccessoryType token; the legacy Hat class doesn't know it
+          // and rejecting unknown properties can break loading on old clients.
+          body = body.replace(/\s*<token name="AccessoryType">\s*\d+\s*<\/token>/g, '');
+
+          return `<Item class="Hat"${attrs}>${body}</Item>`;
+        });
+
+        return { text, count };
+      },
+
       setFile(files) {
         if (files && files.length > 0) {
           this.currentFiles = Array.from(files);
@@ -728,6 +772,7 @@
 
             const isXml = file.name.toLowerCase().endsWith('.rbxlx');
             const convertWedges = this.toggleConvertWedges.checked;
+            const convertHair = this.toggleConvertHair.checked;
             let out = fix_place(
               bytes,
               isXml,
@@ -747,15 +792,27 @@
 
             const shouldOutputXml = (isXml && !forceBinary) || forceXml;
 
-            if (convertWedges) {
+            // xml-only post-processing passes. decode once, run each enabled
+            // pass over the text, then re-encode once.
+            if (convertWedges || convertHair) {
               if (shouldOutputXml) {
                 let text = new TextDecoder('utf-8').decode(out);
-                const result = this.convertWedgesToXml(text);
-                text = result.text;
-                console.log(`converted wedges: ${result.count} WedgePart(s) -> Part (shape=Wedge) in ${file.name}`);
+                if (convertWedges) {
+                  const result = this.convertWedgesToXml(text);
+                  text = result.text;
+                  console.log(`converted wedges: ${result.count} WedgePart(s) -> Part (shape=Wedge) in ${file.name}`);
+                }
+                if (convertHair) {
+                  const result = this.convertHairToXml(text);
+                  text = result.text;
+                  console.log(`converted hair: ${result.count} Accessory(s) -> Hat in ${file.name}`);
+                }
                 out = new TextEncoder().encode(text);
               } else {
-                console.warn(`skipped wedge conversion for ${file.name}: only works on xml output. enable "force xml output" to use this.`);
+                const skipped = [];
+                if (convertWedges) skipped.push('wedge');
+                if (convertHair) skipped.push('hair');
+                console.warn(`skipped ${skipped.join(' & ')} conversion for ${file.name}: only works on xml output. enable "force xml output" to use this.`);
               }
             }
 
