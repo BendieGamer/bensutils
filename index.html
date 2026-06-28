@@ -519,6 +519,70 @@
         this.exportConfigBtn.addEventListener('click', () => this.handleExportConfig());
         this.importConfigBtn.addEventListener('click', () => this.importConfigInput.click());
         this.importConfigInput.addEventListener('change', (e) => this.handleImportConfig(e));
+
+        // restore persisted settings, then save on any change so the user's
+        // toggle selections + texture input survive page reloads.
+        this.loadSettings();
+        this.persistedFields().forEach(({ el }) => {
+          if (!el) return;
+          el.addEventListener('change', () => this.saveSettings());
+          el.addEventListener('input', () => this.saveSettings());
+        });
+      },
+
+      // the controls whose state we persist to localStorage, keyed by a stable
+      // storage name. checkboxes save .checked; text/select save .value.
+      persistedFields() {
+        return [
+          { key: 'folders', el: this.toggleFolders, type: 'check' },
+          { key: 'meshparts', el: this.toggleMeshParts, type: 'check' },
+          { key: 'xml', el: this.toggleXml, type: 'check' },
+          { key: 'binary', el: this.toggleBinary, type: 'check' },
+          { key: 'assetIdToUrl', el: this.toggleAssetIdToUrl, type: 'check' },
+          { key: 'assetUrlFormat', el: this.assetUrlFormatInput, type: 'value' },
+          { key: 'smoothTerrain', el: this.toggleSmoothTerrain, type: 'check' },
+          { key: 'terrainVersion', el: this.terrainVersionSelect, type: 'value' },
+          { key: 'downgradeVoxel', el: this.toggleDowngradeVoxel, type: 'check' },
+          { key: 'voxelVersion', el: this.voxelVersionSelect, type: 'value' },
+          { key: 'fixUnions', el: this.toggleFixUnions, type: 'check' },
+          { key: 'convertWedges', el: this.toggleConvertWedges, type: 'check' },
+          { key: 'convertHair', el: this.toggleConvertHair, type: 'check' },
+          { key: 'hairTextureMap', el: this.hairTextureMap, type: 'value' },
+        ];
+      },
+
+      STORAGE_KEY: 'bensutils.placeConverter.settings',
+
+      saveSettings() {
+        try {
+          const data = {};
+          this.persistedFields().forEach(({ key, el, type }) => {
+            if (!el) return;
+            data[key] = type === 'check' ? el.checked : el.value;
+          });
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+        } catch (err) {
+          // localStorage can be unavailable (private mode/quota); ignore.
+        }
+      },
+
+      loadSettings() {
+        let data;
+        try {
+          data = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || 'null');
+        } catch (err) { data = null; }
+        if (!data || typeof data !== 'object') return;
+
+        this.persistedFields().forEach(({ key, el, type }) => {
+          if (!el || !Object.prototype.hasOwnProperty.call(data, key)) return;
+          if (type === 'check') el.checked = !!data[key];
+          else el.value = data[key];
+        });
+
+        // sync the reveal-on-toggle containers to the restored checkbox states.
+        this.assetUrlFormatContainer.style.display = this.toggleAssetIdToUrl.checked ? 'block' : 'none';
+        this.terrainVersionContainer.style.display = this.toggleSmoothTerrain.checked ? 'block' : 'none';
+        this.voxelVersionContainer.style.display = this.toggleDowngradeVoxel.checked ? 'block' : 'none';
       },
 
       handleExportConfig() {
@@ -732,22 +796,37 @@
 
           if (assetId) {
             const url = `http://www.roblox.com/asset/?id=${assetId}`;
-            // fill the SpecialMesh TextureId. the WASM emits it either as the
-            // empty <null> form OR may omit it; handle both. only set when it's
-            // currently empty so we never clobber a real texture.
+            // fill the SpecialMesh TextureId. the converted SpecialMesh can write
+            // the empty texture several ways (or omit the element), so handle all:
+            //   a) <Content name="TextureId"><null></null></Content>
+            //   b) <Content name="TextureId"></Content> (empty)
+            //   c) <Content name="TextureId"/> (self-closing)
+            //   d) no TextureId element at all -> inject one right after MeshId
+            // casing tolerated (TextureId / TextureID). only set when empty so a
+            // real texture is never clobbered.
             let didSet = false;
-            if (/<Content name="TextureId">\s*<null>\s*<\/null>\s*<\/Content>/.test(newBody)) {
+            const setUrl = `<Content name="TextureId"><url>${url}</url></Content>`;
+
+            if (/<Content name="TextureI[dD]">\s*<null\s*\/?>\s*(<\/null>)?\s*<\/Content>/.test(newBody)) {
               newBody = newBody.replace(
-                /(<Content name="TextureId">)\s*<null>\s*<\/null>\s*(<\/Content>)/,
-                `$1<url>${url}</url>$2`
+                /<Content name="TextureI[dD]">\s*<null\s*\/?>\s*(?:<\/null>)?\s*<\/Content>/,
+                setUrl
               );
               didSet = true;
-            } else if (/<Content name="TextureId">\s*<\/Content>/.test(newBody)) {
-              newBody = newBody.replace(
-                /<Content name="TextureId">\s*<\/Content>/,
-                `<Content name="TextureId"><url>${url}</url></Content>`
-              );
+            } else if (/<Content name="TextureI[dD]">\s*<\/Content>/.test(newBody)) {
+              newBody = newBody.replace(/<Content name="TextureI[dD]">\s*<\/Content>/, setUrl);
               didSet = true;
+            } else if (/<Content name="TextureI[dD]"\s*\/>/.test(newBody)) {
+              newBody = newBody.replace(/<Content name="TextureI[dD]"\s*\/>/, setUrl);
+              didSet = true;
+            } else if (!/<Content name="TextureI[dD]">\s*<url>/.test(newBody)) {
+              // no (filled) TextureId present: inject right after the MeshId
+              // element so it sits in the SpecialMesh's Properties block.
+              const meshIdRe = /(<Content name="MeshI[dD]">[\s\S]*?<\/Content>)/;
+              if (meshIdRe.test(newBody)) {
+                newBody = newBody.replace(meshIdRe, `$1\n\t\t\t\t\t${setUrl}`);
+                didSet = true;
+              }
             }
             if (didSet) textured++;
           }
