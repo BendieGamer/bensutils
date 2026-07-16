@@ -378,7 +378,8 @@
       convert_filemesh_to_obj,
       convert_filemesh_version,
       RobloxMeshVersion,
-      TerrainFormat
+      TerrainFormat,
+      LoadstringBytecodeHandlingMethod
     } from './robloxPlaceConverter.js';
 
     atob('c3RhbiB3YXMgaGVyZQ==');
@@ -876,7 +877,9 @@
             /*convert_assetid_to_url*/ false, '',
             /*convert_meshpart*/ false, /*smooth_to_voxel*/ false,
             TerrainFormat.ClusterGridV1, /*downgrade_voxel*/ false,
-            TerrainFormat.ClusterGridV1, /*fix_unions*/ false
+            TerrainFormat.ClusterGridV1, /*fix_unions*/ false,
+            /*remove_keyframesequences*/ false,
+            LoadstringBytecodeHandlingMethod.None
           );
           const text = new TextDecoder('utf-8').decode(xmlBytes);
 
@@ -1055,7 +1058,9 @@
               TerrainFormat[`ClusterGrid${terrainVersion}`],
               toggleDowngradeVoxel,
               TerrainFormat[`ClusterGrid${this.voxelVersionSelect.value}`],
-              fixUnions
+              fixUnions,
+              /*remove_keyframesequences*/ false,
+              LoadstringBytecodeHandlingMethod.None
             );
 
             const shouldOutputXml = (isXml && !forceBinary) || forceXml;

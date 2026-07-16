@@ -1,6 +1,12 @@
 /* tslint:disable */
 /* eslint-disable */
 
+export enum LoadstringBytecodeHandlingMethod {
+    None = 0,
+    Fione = 1,
+    UnluacDecompilation = 2,
+}
+
 export enum RobloxMeshVersion {
     V1_00 = 0,
     V1_01 = 1,
@@ -24,9 +30,11 @@ export function convert_filemesh_version(filemesh_data: Uint8Array, version: Rob
 
 export function convert_obj_to_filemesh(obj_data: Uint8Array, version: RobloxMeshVersion): Promise<Uint8Array>;
 
-export function fix_place(input_bytes: Uint8Array, _is_xml_output_hint_this_is_never_used_anymore_due_to_auto_detection: boolean, force_xml_output: boolean, force_binary_output: boolean, folders_to_models: boolean, mappings_js: any, convert_assetid_to_url: boolean, asset_url_format: string, convert_meshpart_to_specialmesh: boolean, smooth_to_voxel: boolean, smooth_terrain_format: TerrainFormat, downgrade_voxel: boolean, voxel_target_format: TerrainFormat, fix_unions: boolean): Uint8Array;
+export function fix_place(input_bytes: Uint8Array, _is_xml_output_hint_this_is_never_used_anymore_due_to_auto_detection: boolean, force_xml_output: boolean, force_binary_output: boolean, folders_to_models: boolean, mappings_js: any, convert_assetid_to_url: boolean, asset_url_format: string, convert_meshpart_to_specialmesh: boolean, smooth_to_voxel: boolean, smooth_terrain_format: TerrainFormat, downgrade_voxel: boolean, voxel_target_format: TerrainFormat, fix_unions: boolean, remove_keyframesequences: boolean, loadstring_bytecode_handling_method: LoadstringBytecodeHandlingMethod): Uint8Array;
 
 export function is_binary_rbxl(bytes: Uint8Array): boolean;
+
+export function minecraft_map_to_place(zip_bytes: Uint8Array, terrain_format: TerrainFormat): Uint8Array;
 
 export function start(): void;
 
@@ -37,8 +45,9 @@ export interface InitOutput {
     readonly convert_filemesh_to_obj: (a: number, b: number) => any;
     readonly convert_filemesh_version: (a: number, b: number, c: number) => any;
     readonly convert_obj_to_filemesh: (a: number, b: number, c: number) => any;
-    readonly fix_place: (a: number, b: number, c: number, d: number, e: number, f: number, g: any, h: number, i: number, j: number, k: number, l: number, m: number, n: number, o: number, p: number) => [number, number, number, number];
+    readonly fix_place: (a: number, b: number, c: number, d: number, e: number, f: number, g: any, h: number, i: number, j: number, k: number, l: number, m: number, n: number, o: number, p: number, q: number, r: number) => [number, number, number, number];
     readonly is_binary_rbxl: (a: number, b: number) => number;
+    readonly minecraft_map_to_place: (a: number, b: number, c: number) => [number, number, number, number];
     readonly start: () => void;
     readonly rust_zstd_wasm_shim_calloc: (a: number, b: number) => number;
     readonly rust_zstd_wasm_shim_free: (a: number) => void;
@@ -48,8 +57,8 @@ export interface InitOutput {
     readonly rust_zstd_wasm_shim_memmove: (a: number, b: number, c: number) => number;
     readonly rust_zstd_wasm_shim_memset: (a: number, b: number, c: number) => number;
     readonly rust_zstd_wasm_shim_qsort: (a: number, b: number, c: number, d: number) => void;
-    readonly wasm_bindgen_c595c3c1c57fdf7___convert__closures_____invoke___wasm_bindgen_c595c3c1c57fdf7___JsValue__core_81e502cd214aeeaa___result__Result_____wasm_bindgen_c595c3c1c57fdf7___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_c595c3c1c57fdf7___convert__closures_____invoke___js_sys_163af53c41e3d2a7___Function_fn_wasm_bindgen_c595c3c1c57fdf7___JsValue_____wasm_bindgen_c595c3c1c57fdf7___sys__Undefined___js_sys_163af53c41e3d2a7___Function_fn_wasm_bindgen_c595c3c1c57fdf7___JsValue_____wasm_bindgen_c595c3c1c57fdf7___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
+    readonly wasm_bindgen_69b9755c9aabf95b___convert__closures_____invoke___wasm_bindgen_69b9755c9aabf95b___JsValue__core_b71b0a6f5a906bae___result__Result_____wasm_bindgen_69b9755c9aabf95b___JsError___true_: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_69b9755c9aabf95b___convert__closures_____invoke___js_sys_ce4228677d4bba06___Function_fn_wasm_bindgen_69b9755c9aabf95b___JsValue_____wasm_bindgen_69b9755c9aabf95b___sys__Undefined___js_sys_ce4228677d4bba06___Function_fn_wasm_bindgen_69b9755c9aabf95b___JsValue_____wasm_bindgen_69b9755c9aabf95b___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

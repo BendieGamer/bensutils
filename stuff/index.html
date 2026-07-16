@@ -497,7 +497,8 @@
       convert_filemesh_to_obj,
       convert_filemesh_version,
       RobloxMeshVersion,
-      TerrainFormat
+      TerrainFormat,
+      LoadstringBytecodeHandlingMethod
     } from './robloxPlaceConverter.js'; // this was originally gonna be just a place converter, but then I added mesh converters too
 
     atob('c3RhbiB3YXMgaGVyZQ==');
@@ -806,7 +807,9 @@
               TerrainFormat[`ClusterGrid${terrainVersion}`],
               toggleDowngradeVoxel,
               TerrainFormat[`ClusterGrid${this.voxelVersionSelect.value}`],
-              fixUnions
+              fixUnions,
+              /*remove_keyframesequences*/ false,
+              LoadstringBytecodeHandlingMethod.None
             );
 
             const shouldOutputXml = (isXml && !forceBinary) || forceXml;
