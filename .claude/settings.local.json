@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/nazar/Desktop/**)",
+      "Read(//c/Users/nazar/Desktop//**)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:create.roblox.com)",
+      "WebFetch(domain:rbxlegacy.wiki)"
+    ]
+  }
+}
